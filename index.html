@@ -53,6 +53,13 @@ h2{font-size:21px;margin:0 0 10px}
 .item-button{border:1px solid #708a8c;border-radius:7px;background:#344b52;color:var(--text);padding:8px 10px;cursor:pointer;font-size:12px}
 .item-button.active{background:#5c5540;border-color:var(--gold);color:#ffe2a1}
 .item-button:hover{border-color:var(--gold)}
+.dev-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.dev-item{padding:13px;border-radius:10px;background:#17282b;border:1px solid #485d60}
+.dev-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px;font-size:15px}
+.dev-head strong{color:var(--gold)}
+.dev-desc{font-size:12px;color:var(--sub);line-height:1.65;margin-top:9px}
+.dev-item .bar>i{background:linear-gradient(90deg,#7da5af,#a6d4aa)}
+@media(max-width:620px){.dev-list{grid-template-columns:1fr}}
 .loot-report{margin-top:13px;padding:12px 14px;border:1px solid #73805f;background:#30382e;border-radius:9px;line-height:1.65;font-size:14px}
 .lead{margin-top:12px;font-size:13px;color:var(--gold)}
 .note{color:var(--sub);font-size:13px;line-height:1.7;margin:12px 0 0}
@@ -73,14 +80,14 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.2 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.3 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
     <div class="stat"><small>最長到達（撃破数）</small><strong id="best">0 体</strong></div>
-    <div class="stat"><small>町の発展</small><strong id="townScore">0</strong></div>
+    <div class="stat"><small>町の育成</small><strong id="townScore">0 / 5</strong></div>
   </section>
-  <div id="goal" class="goal"><span><b>灰渡の目標</b>：1回の遠征で敵を10体倒す</span><strong id="goalLabel">挑戦中</strong></div>
+  <div id="goal" class="goal"><span><b>灰渡の目標</b>：街道 Lv3・工房 Lv2・遠征10体撃破</span><strong id="goalLabel">育成中</strong></div>
   <section class="stage" aria-label="横スクロールの遠征画面">
     <canvas id="scene" width="960" height="360" role="img" aria-label="王子とメイドが右へ進み、敵と自動で戦う"></canvas>
     <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><strong id="encounterLabel">出撃前</strong></div>
@@ -95,6 +102,23 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="maidSpeech">「王子さま！　次の遠征の前に、ひとつだけ準備しましょう！」</p></div>
     <div class="choices" id="choices"></div>
     <p class="note">ひとつ選ぶと、そのまま二人で出撃します。戦闘中のコマンド操作はありません。</p>
+  </section>
+  <section id="developmentPanel" class="card">
+    <div class="motto">灰渡の町を育てる</div>
+    <h2>町の育成</h2>
+    <div class="dev-list">
+      <div class="dev-item">
+        <div class="dev-head"><b>🛤 街道の整備</b><strong id="roadLevel">0 / 3</strong></div>
+        <div class="bar"><i id="roadBar" style="width:0%"></i></div>
+        <div id="roadDescription" class="dev-desc">草に埋もれた街道。遠征の準備が大変。</div>
+      </div>
+      <div class="dev-item">
+        <div class="dev-head"><b>⚒ 工房の復興</b><strong id="forgeLevel">0 / 2</strong></div>
+        <div class="bar"><i id="forgeBar" style="width:0%"></i></div>
+        <div id="forgeDescription" class="dev-desc">まだ小さな工房。装備を整える余裕がない。</div>
+      </div>
+    </div>
+    <p id="townGuidance" class="note">メイドの提案で町を育てよう。街道の整備は二人の最大HP、工房の復興は攻撃力を伸ばす。資源の収支計算はなし。</p>
   </section>
   <section id="equipmentPanel" class="card">
     <div class="motto">帰還後に整える</div>
@@ -112,19 +136,20 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
     <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="resultSpeech"></p></div>
     <div id="lootReport" class="loot-report"></div>
-    <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>町の発展 +</small><b id="resultTown">0</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
+    <div id="developmentReport" class="loot-report" hidden></div>
+    <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>今回の町育成</small><b id="resultTown">—</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
   </section>
 </main>
-<footer>メイドの噂・遠征での発見・帰還後の装備を試す仮実装です。町の発展値は以前の仮表示のままです。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
+<footer>メイドの噂・装備発見・町の育成・灰渡の目標を確かめる仮実装です。町の育成項目と数値は仮設定。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",runs:0,best:0,town:0,goal:false,items:[],equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
-var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null};
+var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
+var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null};
 var frameAt=0,clock=0;
 // ここから下の発見条件・装備数値は試作用の仮データ。
 var itemData={
@@ -134,6 +159,35 @@ var itemData={
 };
 function item(id){return id?itemData[id]:null;}
 function totalAttack(actor){var gear=item(state.equipment[actor]);return state[actor].atk+(gear?gear.bonus:0);}
+var mapGoal={road:3,forge:2,kills:10}; // 灰渡v0.3限定の仮ゴール
+var roadScenes=[
+  "草に埋もれた街道。遠征の準備が大変。",
+  "道を片づけ、町から出やすくなってきた。",
+  "通り道が広がり、旅の支度が楽になった。",
+  "街道が整い、灰渡の外へ安心して向かえる。"
+];
+var forgeScenes=[
+  "まだ小さな工房。装備を整える余裕がない。",
+  "工房に道具が戻り、二人の武具を調整できる。",
+  "工房が復興し、遠征の武具を安定して用意できる。"
+];
+function mapGoalReached(){
+  return state.town.road>=mapGoal.road &&
+    state.town.forge>=mapGoal.forge && state.best>=mapGoal.kills;
+}
+function advanceTown(which){
+  if(which==="road" && state.town.road<mapGoal.road){
+    state.town.road++;
+    state.prince.max+=4;state.maid.max+=4;
+    return "街道を整備！ 街道 Lv"+state.town.road+"。二人の最大HP +4。";
+  }
+  if(which==="forge" && state.town.forge<mapGoal.forge){
+    state.town.forge++;
+    state.prince.atk++;state.maid.atk++;
+    return "工房を復興！ 工房 Lv"+state.town.forge+"。二人の基礎攻撃 +1。";
+  }
+  return null;
+}
 function nextRumor(){
   if(state.items.indexOf("old_sword")<0)return {id:"old_sword",title:"街道に古い剣があるそうです！",effect:"敵を2体倒せば剣を発見",speech:"「王子さま、街道の草むらに剣が落ちているという噂です！　探してみませんか？」"};
   if(state.items.indexOf("forest_staff")<0&&state.best>=2)return {id:"forest_staff",title:"森の奥で光を見たそうです！",effect:"敵を4体倒せば杖を発見",speech:"「森で光る枝を見た人がいるんですって。少し奥まで行ってみませんか？」"};
@@ -142,14 +196,20 @@ function nextRumor(){
 }
 function getProposals(){
   var rumor=nextRumor(),proposals=[];
-  if(rumor)proposals.push({title:rumor.title,effect:rumor.effect,apply:function(){return rumor.id;}});
-  proposals.push({
-    title:state.runs%2===0?"王子さま、剣の稽古です！":"私も戦えるようになります！",
-    effect:state.runs%2===0?"王子の基礎攻撃 +2":"メイドの基礎攻撃 +2",
-    apply:function(){if(state.runs%2===0)state.prince.atk+=2;else state.maid.atk+=2;return null;}
+  if(rumor)proposals.push({title:rumor.title,effect:rumor.effect,apply:function(){return {hunt:rumor.id};}});
+  if(state.town.road<mapGoal.road)proposals.push({
+    title:"街道を整えましょう！",effect:"街道の整備 +1 / 二人の最大HP +4",
+    apply:function(){return {development:advanceTown("road")};}
   });
-  proposals.push({title:"お弁当を増やしましょう！",effect:"二人の最大HP +6",apply:function(){state.prince.max+=6;state.maid.max+=6;return null;}});
-  if(!rumor)proposals.push({title:"二人で剣を振ってみましょう！",effect:"王子とメイドの基礎攻撃 +1",apply:function(){state.prince.atk++;state.maid.atk++;return null;}});
+  if(state.town.forge<mapGoal.forge)proposals.push({
+    title:"工房を立て直しましょう！",effect:"工房の復興 +1 / 二人の攻撃 +1",
+    apply:function(){return {development:advanceTown("forge")};}
+  });
+  var n=state.runs%3;
+  if(n===0)proposals.push({title:"王子さま、剣の稽古です！",effect:"王子の基礎攻撃 +2",apply:function(){state.prince.atk+=2;return {};}});
+  if(n===1)proposals.push({title:"私も戦えるようになります！",effect:"メイドの基礎攻撃 +2",apply:function(){state.maid.atk+=2;return {};}});
+  if(n===2)proposals.push({title:"お弁当を増やしましょう！",effect:"二人の最大HP +6",apply:function(){state.prince.max+=6;state.maid.max+=6;return {};}});
+  if(proposals.length===1)proposals.push({title:"二人で稽古をしましょう！",effect:"王子とメイドの基礎攻撃 +1",apply:function(){state.prince.atk++;state.maid.atk++;return {};}});
   return proposals;
 }
 function renderEquipment(){
@@ -188,20 +248,31 @@ function renderEquipment(){
 function refreshStats(){
   $("runs").textContent=String(state.runs);
   $("best").textContent=state.best+" 体";
-  $("townScore").textContent=String(state.town);
+  $("townScore").textContent=(state.town.road+state.town.forge)+" / "+(mapGoal.road+mapGoal.forge);
+  $("roadLevel").textContent=state.town.road+" / "+mapGoal.road;
+  $("forgeLevel").textContent=state.town.forge+" / "+mapGoal.forge;
+  $("roadBar").style.width=100*state.town.road/mapGoal.road+"%";
+  $("forgeBar").style.width=100*state.town.forge/mapGoal.forge+"%";
+  $("roadDescription").textContent=roadScenes[state.town.road];
+  $("forgeDescription").textContent=forgeScenes[state.town.forge];
+  $("townGuidance").textContent=mapGoalReached()?
+    "灰渡の育成目標を達成！ 次のマップはまだ未実装です。このまま遠征や装備集めを続けられます。":
+    "メイドの提案で町を育てよう。街道は最大HP、工房は攻撃力に影響。遠征の最長記録も目標のひとつ。";
   $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+totalAttack("prince");
   $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+totalAttack("maid");
   $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし");
   $("maidGear").textContent="装備："+(item(state.equipment.maid)?item(state.equipment.maid).name:"なし");
   $("princeBar").style.width=100*state.prince.hp/state.prince.max+"%";
   $("maidBar").style.width=100*state.maid.hp/state.maid.max+"%";
+  state.goal=mapGoalReached();
   $("goal").classList.toggle("done",state.goal);
-  $("goalLabel").textContent=state.goal?"達成！":"挑戦中";
+  $("goalLabel").textContent=state.goal?"達成！":"街道 "+state.town.road+"/3 ・工房 "+state.town.forge+"/2 ・遠征 "+Math.min(state.best,10)+"/10";
 }
 function show(phase){
   state.phase=phase;
   $("townPanel").hidden=phase!=="town";
   $("equipmentPanel").hidden=phase!=="town";
+  $("developmentPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
   $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"王子とメイドの自動遠征中":"町へ帰還しました";
@@ -211,7 +282,7 @@ function show(phase){
 function renderChoices(){
   var box=$("choices");box.textContent="";
   var rumor=nextRumor();
-  $("maidSpeech").textContent=rumor?rumor.speech:"「王子さま！　次は何を鍛えて遠征しましょうか？」";
+  $("maidSpeech").textContent=rumor?rumor.speech:(!mapGoalReached()?"「王子さま、灰渡をもっと立派にしたいです！　街道や工房も整えてみませんか？」":"「王子さま、灰渡は立派になりましたね！　もう少し遠征してみましょうか？」");
   getProposals().forEach(function(p){
     var btn=document.createElement("button");btn.type="button";btn.className="choice";
     var title=document.createElement("b"),eff=document.createElement("span");
@@ -223,11 +294,11 @@ function renderChoices(){
 }
 function startRun(p){
   if(state.phase!=="town")return;
-  var huntId=p.apply();state.runs++;
+  var outcome=p.apply()||{},huntId=outcome.hunt||null,development=outcome.development||null;state.runs++;
   state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+p.title+"」を実行して、いざ出撃！",hunt:huntId,found:null};
+  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+p.title+"」を実行して、いざ出撃！",hunt:huntId,found:null,development:development};
   var gear=item(huntId);
-  $("expeditionLead").textContent=gear?"調査中："+gear.name+"（敵を"+gear.at+"体倒すと発見）":"今回は装備の調査なし";
+  $("expeditionLead").textContent=gear?"調査中："+gear.name+"（敵を"+gear.at+"体倒すと発見）":development?development:"今回は装備の調査なし";
   $("battleMsg").textContent=battle.message;
   spawnEnemy();show("battle");
 }
@@ -252,8 +323,8 @@ function strike(who){
   if(enemy.hp<=0){
     battle.kills++;battle.nextTimer=.65;
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
-    if(battle.kills>=10&&!state.goal){state.goal=true;say("灰渡の目標達成！ でも遠征はまだ続きます。");}
     if(battle.kills>state.best){state.best=battle.kills;}
+    if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
     if(battle.hunt&&!battle.found&&battle.kills>=item(battle.hunt).at){
       battle.found=battle.hunt;
       say("発見！　"+item(battle.found).name+"を持ち帰れそうです！");
@@ -291,18 +362,19 @@ function update(dt){
 }
 function endRun(){
   var earned=battle.kills;
-  state.town+=earned;
   if(battle.found&&state.items.indexOf(battle.found)<0)state.items.push(battle.found);
   $("lootReport").textContent=battle.found?
     "発見！ "+item(battle.found).name+"を持ち帰りました。町に戻って王子かメイドに装備させよう！":
     battle.hunt?"調査した場所には届きませんでした。次回また噂を選んで挑戦できます。":
     "今回は新しい装備の調査をしていません。メイドの噂から探しに行けます。";
   $("resultKills").textContent=String(earned);
-  $("resultTown").textContent=String(earned);
+  $("resultTown").textContent=battle.development?"+1":"—";
+  $("developmentReport").hidden=!battle.development;
+  $("developmentReport").textContent=battle.development||"";
   $("resultBest").textContent=String(state.best);
   $("resultTitle").textContent=state.goal?"灰渡の目標達成！":"二人は町に帰還した";
   $("resultSpeech").textContent=state.goal?
-    "「王子さま、目標を達成しました！ もっと奥へ行けるか、また試しましょう！」":
+    "「王子さま、灰渡の育成目標を達成しました！ 次の町はまだないので、もっと遠征してみましょう！」":
     "「王子さま、今回は"+earned+"体倒せました！ 町で準備をして、また挑戦しましょう！」";
   show("result");
 }
