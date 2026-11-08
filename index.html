@@ -120,7 +120,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.9 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.10 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -131,7 +131,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="resource-chip">🪙 所持金 <strong id="goldCount">0 G</strong></div>
     <div class="resource-chip">🪨 共通素材 <strong id="materialCount">0</strong></div>
   </div>
-  <div id="goal" class="goal"><span><b>灰渡の目標</b>：街道 Lv3・工房 Lv2・遠征10体撃破</span><strong id="goalLabel">育成中</strong></div>
+  <div id="goal" class="goal"><span><b>灰渡の決着</b>：トーマの手がかりを得て、森の大狼との決戦に勝つ</span><strong id="goalLabel">育成中</strong></div>
   <section class="stage" aria-label="横スクロールの遠征画面">
     <canvas id="scene" width="960" height="360" role="img" aria-label="王子とメイドが右へ進み、敵と自動で戦う"></canvas>
     <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><div><strong id="encounterLabel">出撃前</strong> <button id="speedToggle" type="button" aria-pressed="false">速度：1倍</button></div></div>
@@ -164,7 +164,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div id="relationScene" class="relation-scene" aria-live="polite"></div>
     <p class="relation-tag">これまでの出来事</p>
     <ul id="relationHistory" class="relation-log"></ul>
-    <p id="relationTip" class="note">最初の交流のあと、遠征10体目で救出イベントが発生します。</p>
+    <p id="relationTip" class="note">最初の交流のあと、遠征4体目で救出イベントが発生します。</p>
     <div class="relationship-others">
       <div class="relation-card">
         <div class="relation-row"><div class="relation-face" aria-hidden="true">👴</div>
@@ -187,6 +187,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
         </div>
         <div id="tomaScene" class="relation-scene"></div>
         <div id="tomaHuntStatus" class="hunt-status">討伐：まだ手がかりなし</div>
+        <button id="decisiveButton" class="primary" type="button" hidden style="width:100%;margin-top:10px">⚔ 森の大狼との決戦へ</button>
         <ul id="tomaHistory" class="relation-log"></ul>
       </div>
     </div>
@@ -247,6 +248,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div id="heroineResult" class="loot-report" hidden></div>
     <div id="postBattleHeroine" class="loot-report" hidden></div>
     <div id="villageEventsResult" class="loot-report" hidden></div>
+    <div id="decisiveResult" class="loot-report" hidden></div>
     <div id="developmentReport" class="loot-report" hidden></div>
     <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>今回の町育成</small><b id="resultTown">—</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
@@ -254,7 +256,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 </main>
 <div id="rescueModal" class="rescue-modal" role="dialog" aria-modal="true" aria-labelledby="rescueTitle" aria-describedby="rescueStory" hidden>
   <div class="rescue-dialog">
-    <div class="motto">遠征イベント / 10体目</div>
+    <div class="motto">遠征イベント / 4体目</div>
     <div class="rescue-portrait" aria-hidden="true">👩</div>
     <h2 id="rescueTitle">村長の娘を救出！</h2>
     <p id="rescueStory"></p>
@@ -262,7 +264,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <button id="rescueContinue" class="primary" type="button">冒険を続ける</button>
   </div>
 </div>
-<footer>v0.9：村長と狩人トーマの友好度・討伐イベントを追加した試作。数値は仮設定。再読み込みで初期化されます。</footer>
+<footer>v0.10：ヒロイン救出を4体目へ移動。トーマの手がかり後に専用の決戦モードが解放される試作。数値は仮設定。再読み込みで初期化されます。</footer>
 </div>
 <script>
 (function(){
@@ -333,8 +335,7 @@ var forgeScenes=[
   "工房が整い、装備品の攻撃補正が合計+2される。"
 ];
 function mapGoalReached(){
-  return state.town.road>=mapGoal.road &&
-    state.town.forge>=mapGoal.forge && state.best>=mapGoal.kills;
+  return villageRelation("toma").flags.indexOf("hunt_done")>=0;
 }
 function advanceTown(which){
   if(which==="road" && state.town.road<mapGoal.road){
@@ -416,7 +417,7 @@ function processVillageReturn(){
     if(intro)news.push("🏹 "+intro);
   }else if(battle.kills>=5&&hunter.flags.indexOf("meeting")>=0&&hunter.flags.indexOf("tracks")<0){
     var trail=recordVillageRelation("toma","tracks",1,
-      "狩人トーマ『森で大きな狼の足跡を見つけた。村に来る前に、あいつを止めたい。手を貸してくれないか？』");
+      "狩人トーマ『森の大狼の居場所を突き止めた！ 決戦の準備ができたら、町から声をかけてくれ』");
     if(trail)news.push("🏹 "+trail);
   }
   return news;
@@ -437,13 +438,14 @@ function renderVillageRelationships(){
   $("mayorStatus").textContent=m.affinity>=4?"信頼している":m.affinity>=2?"認め始めた":"様子見";
   $("tomaStatus").textContent=t.flags.indexOf("hunt_done")>=0?"討伐の戦友":
     t.flags.indexOf("tracks")>=0?"討伐依頼中":t.flags.indexOf("meeting")>=0?"顔見知り":"まだ会っていない";
-  $("tomaHuntStatus").textContent=t.flags.indexOf("hunt_done")>=0?
-    "討伐完了：森の大狼を倒し、村の安全を守った。":
-    t.flags.indexOf("tracks")>=0?
-      "討伐依頼：メイドの提案からトーマの依頼を選び、遠征8体目の森の大狼を倒そう。":
-      t.flags.indexOf("meeting")>=0?
-        "討伐：さらに遠征で実績を作るとトーマが手がかりを教えてくれる。":
-        "討伐：トーマとはまだ会っていない。";
+  var met=t.flags.indexOf("meeting")>=0,ready=t.flags.indexOf("tracks")>=0,done=t.flags.indexOf("hunt_done")>=0;
+  $("tomaHuntStatus").textContent=done?
+    "✅ 討伐完了！ 森の大狼を倒し、灰渡の脅威を退けた。":
+    ready?"③ 決戦へ：森の大狼の居場所を特定！ 下のボタンから専用ボス戦へ。負けても再挑戦できる。":
+    met?"② 手がかりを探す：次の通常遠征で敵を5体以上倒して帰還しよう。":
+    "① トーマに出会う：通常遠征で敵を3体以上倒して帰還しよう。";
+  $("decisiveButton").hidden=!ready||done;
+  $("decisiveButton").disabled=!!planning;
 }
 // 親密度の値とイベント内容は仮置き。住人の自律行動は行わない。
 function daughter(){return state.relationships.daughter;}
@@ -497,7 +499,7 @@ function rescueDaughter(){
   var d=daughter();if(d.rescued)return null;
   var close=d.affinity>=3;
   d.rescued=true;d.joined=true;
-  var text="【街道で救出】10体目の古い道の番人を倒した先で、魔物に追われる村長の娘を発見！ 王子とメイドが助け出した。"+(close?
+  var text="【街道で救出】4体目の魔物を倒した先で、魔物に追われる村長の娘を発見！ 王子とメイドが助け出した。"+(close?
     "『……王子さまなら来てくださると思っていました』":
     "『助けてくださって、本当にありがとうございます！』");
   var news=recordVillageRelation("mayor","daughter_rescued",1,
@@ -515,8 +517,8 @@ function renderRelationships(){
   $("relationMembership").textContent=d.joined?"💗 灰渡限定の仲間":d.firstExchange?"10体目で救出可能":"町の重要人物";
   $("relationTip").textContent=d.joined?
     "灰渡限定の仲間として編成できます。これからの交流は帰還後にランダムで発生します。":
-    d.firstExchange?"最初の交流を終えました。遠征10体目の救出へ！":
-    "メイドの提案で一度お話しすると、遠征10体目に救出イベントが発生します。";
+    d.firstExchange?"最初の交流を終えました。通常遠征4体目の救出へ！":
+    "メイドの提案で一度お話しすると、通常遠征4体目に救出イベントが発生します。";
   var log=$("relationHistory");log.textContent="";
   d.history.slice(-4).reverse().forEach(function(x){
     var li=document.createElement("li");li.textContent=x.text;log.appendChild(li);
@@ -537,15 +539,9 @@ function getProposals(){
     title:"町の人に話を聞いてみましょう！",effect:"技術品・人材を探す（結果はランダム）",topic:"search",
     apply:function(){return {development:"町で聞き込みを行いました。"};}
   });
-  if(villageRelation("toma").flags.indexOf("tracks")>=0 &&
-     villageRelation("toma").flags.indexOf("hunt_done")<0)proposals.push({
-    huntPriority:true,title:"狩人トーマと森の魔物を討伐しましょう！",
-    effect:"村の討伐依頼 / 遠征8体目に森の大狼が出現",
-    apply:function(){return {tomaHunt:true,development:"狩人トーマの案内で、森の大狼の討伐に向かいます。"};}
-  });
   if(daughter().met&&!daughter().firstExchange)proposals.push({
     heroineFirst:true,title:"村長の娘さんと初めてお話ししましょう！",
-    effect:"最初の交流 / 遠征10体目の救出イベント解放",
+    effect:"最初の交流 / 遠征4体目の救出イベント解放",
     apply:function(){daughter().firstExchange=true;return {relationship:visitDaughter()};}
   });
   proposals.push({title:"遠征の準備だけしましょう！",effect:"内政は行わず、装備を整えて出撃",apply:function(){return {};}});
@@ -554,7 +550,7 @@ function getProposals(){
 // 毎回、条件に合う提案を最大3件抽選。最初の交流だけは必ず候補にする。
 function rollProposals(){
   var pool=getProposals(),chosen=[];
-  var priorities=pool.filter(function(p){return p.heroineFirst||p.huntPriority;});
+  var priorities=pool.filter(function(p){return p.heroineFirst;});
   chosen=priorities.slice(0,3);
   pool=pool.filter(function(p){return priorities.indexOf(p)<0;});
   for(var i=pool.length-1;i>0;i--){
@@ -692,8 +688,8 @@ function refreshStats(){
   $("roadDescription").textContent=roadScenes[state.town.road];
   $("forgeDescription").textContent=forgeScenes[state.town.forge];
   $("townGuidance").textContent=mapGoalReached()?
-    "灰渡の育成目標を達成！ 次のマップはまだ未実装です。このまま遠征や装備集めを続けられます。":
-    "街道は噂を増やし、工房は装備品の性能を高めます。遠征の最長記録も仮目標です。";
+    "灰渡編をクリア！ 追放と次の町はまだ未実装。娘とも引き続き遠征できます。":
+    "町を育て、仲間と装備を整えよう。灰渡編の最後は、トーマの情報から挑む森の大狼との決戦です。";
   $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+totalAttack("prince");
   $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+totalAttack("maid");
   $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし");
@@ -717,7 +713,7 @@ function refreshStats(){
   $("maidBar").style.width=100*state.maid.hp/state.maid.max+"%";
   state.goal=mapGoalReached();
   $("goal").classList.toggle("done",state.goal);
-  $("goalLabel").textContent=state.goal?"達成！":"街道 "+state.town.road+"/3 ・工房 "+state.town.forge+"/2 ・遠征 "+Math.min(state.best,10)+"/10";
+  $("goalLabel").textContent=state.goal?"灰渡編クリア！":villageRelation("toma").flags.indexOf("tracks")>=0?"決戦に挑める！":villageRelation("toma").flags.indexOf("meeting")>=0?"トーマの手がかりを探す":"村の様子を調べる";
 }
 function show(phase){
   state.phase=phase;
@@ -730,8 +726,8 @@ function show(phase){
   $("relationshipPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
-  $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"遠征メンバーの自動戦闘中":"町へ帰還しました";
-  $("encounterLabel").textContent=phase==="town"?"出撃前":phase==="result"?"今回 "+battle.kills+" 体撃破":"第"+(battle.kills+1)+"戦";
+  $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?(battle.tomaHunt?"⚔ 灰渡の決戦中":"遠征メンバーの自動戦闘中"):"町へ帰還しました";
+  $("encounterLabel").textContent=phase==="town"?"出撃前":phase==="result"?(battle.tomaHunt?"決戦結果":"今回 "+battle.kills+" 体撃破"):(battle.tomaHunt?"森の大狼との決戦":"第"+(battle.kills+1)+"戦");
   refreshStats();
 }
 function renderChoices(){
@@ -767,21 +763,29 @@ function startRun(){
   $("tomaBattleEvent").hidden=true;
   $("rescueModal").hidden=true;
   $("dropTicker").hidden=true;$("dropTicker").textContent="";
-  $("expeditionLead").textContent=plan.tomaHunt?"狩人トーマの討伐依頼：遠征8体目の森の大狼を倒そう！":"敵から所持金・共通素材・低確率の装備を集めよう。";
+  $("expeditionLead").textContent=plan.tomaHunt?"⚔ 決戦モード：森の大狼1体に挑戦。倒せば灰渡編クリア！":"敵から所持金・共通素材・低確率の装備を集めよう。";
   $("battleMsg").textContent=battle.message;spawnEnemy();show("battle");
 }
 $("departButton").addEventListener("click",startRun);
+$("decisiveButton").addEventListener("click",function(){
+  if(state.phase!=="town"||planning||mapGoalReached()||
+     villageRelation("toma").flags.indexOf("tracks")<0)return;
+  // 通常のメイド提案ではなく、町から直接選ぶ一回のボス決戦。
+  planning={title:"狩人トーマと森の大狼に挑む",development:"村の脅威を退けるため、森の大狼との決戦へ向かいます。",
+    event:null,topic:null,rumor:null,relationship:null,tomaHunt:true};
+  startRun();
+});
 function spawnEnemy(){
-  var n=battle.kills+1,kind=battle.tomaHunt&&n===8?"huntBoss":n%10===0?"boss":n%3===0?"wolf":n%3===2?"goblin":"slime";
+  var n=battle.kills+1,kind=battle.tomaHunt?"huntBoss":n%10===0?"boss":n%3===0?"wolf":n%3===2?"goblin":"slime";
   var names={slime:"草原スライム",goblin:"街道ゴブリン",wolf:"森の魔狼",boss:"古い道の番人",huntBoss:"森の大狼"};
-  var max=Math.round(9+n*4.2+(kind==="boss"?16:kind==="huntBoss"?12:0));
-  battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:1+Math.floor(n*.8)+(kind==="boss"||kind==="huntBoss"?3:0),x:960,timer:1.3,hit:0};
+  var max=kind==="huntBoss"?75:Math.round(9+n*4.2+(kind==="boss"?16:0));
+  battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:kind==="huntBoss"?5:1+Math.floor(n*.8)+(kind==="boss"?3:0),x:960,timer:1.3,hit:0};
   state.party.forEach(function(id){battle.timers[id]=attackInterval(id)*.5;});
-  $("battleTitle").textContent="第"+n+"戦";
+  $("battleTitle").textContent=battle.tomaHunt?"⚔ 決戦：森の大狼":"第"+n+"戦";
   $("enemyName").textContent=battle.enemy.name;
   $("enemyHp").textContent="HP "+max+"/"+max;
   $("enemyBar").style.width="100%";
-  $("encounterLabel").textContent="第"+n+"戦";
+  $("encounterLabel").textContent=battle.tomaHunt?"森の大狼":"第"+n+"戦";
 }
 function say(message){battle.message=message;$("battleMsg").textContent=message;}
 function strike(id){
@@ -809,7 +813,7 @@ function strike(id){
     }
     var loot=collectBattleRewards(enemy);
     if(loot)say(enemy.name+"が「"+item(loot).name+"」をドロップ！");
-    if(battle.kills===10&&daughter().firstExchange&&!daughter().rescued){
+    if(!battle.tomaHunt&&battle.kills===4&&daughter().firstExchange&&!daughter().rescued){
       battle.rescueText=rescueDaughter();
       battle.rescueWaiting=true;
       battle.rescuePause=2.8;battle.nextTimer=1;
@@ -818,9 +822,9 @@ function strike(id){
       $("battleHeroineEvent").hidden=false;
       $("battleHeroineEvent").textContent=battle.rescueText;
       if($("rescueContinue").focus)$("rescueContinue").focus();
-      say("10体目突破！ 村長の娘を救出した！");
+      say("4体目突破！ 村長の娘を救出した！");
     }
-    if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
+    if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡編クリア！ 森の大狼を退けた！");}
     if(battle.kills%4===0&&Math.random()<.45){
       state.party.forEach(function(actor){state[actor].hp=Math.min(state[actor].max,state[actor].hp+5);});
       say("道ばたで薬草を発見！　遠征メンバーのHPが5回復。");
@@ -833,7 +837,7 @@ function update(dt){
   battle.scroll+=dt*105;battle.flash=Math.max(0,battle.flash-dt);
   battle.rescuePause=Math.max(0,(battle.rescuePause||0)-dt);
   battle.shots=battle.shots.filter(function(shot){shot.ttl-=dt;return shot.ttl>0;});
-  if(battle.nextTimer>0){battle.nextTimer-=dt;if(battle.nextTimer<=0)spawnEnemy();return;}
+  if(battle.nextTimer>0){battle.nextTimer-=dt;if(battle.nextTimer<=0){if(battle.tomaHunt&&battle.kills>0)endRun();else spawnEnemy();}return;}
   var e=battle.enemy;if(!e)return;
   e.hit=Math.max(0,e.hit-dt);
   if(e.x>356){e.x=Math.max(356,e.x-dt*470);return;}
@@ -873,7 +877,7 @@ $("rescueContinue").addEventListener("click",function(){
 });
 function endRun(){
   var earned=battle.kills;
-  var villageNews=processVillageReturn();
+  var villageNews=battle.tomaHunt?(battle.villageEvents||[]).slice():processVillageReturn();
   if(daughter().joined&&state.currentTown==="haiwatari"&&state.party.indexOf("daughter")<0&&state.party.length<3){
     state.party.push("daughter");
   }
@@ -894,9 +898,15 @@ function endRun(){
   $("developmentReport").hidden=!battle.development&&!battle.event;
   $("developmentReport").textContent=[battle.development,battle.event].filter(Boolean).join(" / ");
   $("resultBest").textContent=String(state.best);
-  $("resultTitle").textContent=state.goal?"灰渡の目標達成！":"二人は町に帰還した";
-  $("resultSpeech").textContent=state.goal?
-    "「王子さま、灰渡の育成目標を達成しました！ 次の町はまだないので、もっと遠征してみましょう！」":
+  $("decisiveResult").hidden=!battle.tomaHunt;
+  $("decisiveResult").textContent=battle.tomaHunt?(mapGoalReached()?
+    "🏆 灰渡編クリア！ 村の脅威は去った。娘も仲間のまま、灰渡で引き続き遊べます。":
+    "⚔ 決戦失敗。装備や仲間を整え、村の狩人トーマから再挑戦できます。"):"";
+  $("resultTitle").textContent=battle.tomaHunt?(mapGoalReached()?"灰渡編クリア！":"決戦から帰還した"):
+    state.goal?"灰渡の決戦クリア済み！":"遠征から帰還した";
+  $("resultSpeech").textContent=battle.tomaHunt?(mapGoalReached()?
+    "「王子さま！ 灰渡の人たちを守れましたね！ 娘さんとも、もう少し一緒に過ごしましょう！」":
+    "「王子さま、あと少しです！ 次の決戦では勝ちましょう！」"):
     "「王子さま、今回は"+earned+"体倒せました！ 町で準備をして、また挑戦しましょう！」";
   show("result");
 }
@@ -961,7 +971,14 @@ function spriteEnemy(e,t){
   if(!e)return;
   var x=Math.round(e.x),y=270+Math.sin(t*6)*2;
   ctx.save();ctx.translate(x,y);
-  if(e.kind==="slime"){
+  if(e.kind==="huntBoss"){
+    poly([[-60,-10],[-54,-67],[-25,-87],[2,-68],[27,-102],[58,-66],[67,-13]],"#46495c");
+    poly([[-47,-64],[-42,-101],[-17,-70]],"#343b4e");
+    poly([[11,-74],[30,-110],[48,-64]],"#343b4e");
+    rect(-30,-58,15,10,"#ffbe69");rect(20,-58,15,10,"#ffbe69");
+    rect(-46,-9,15,24,"#343b4e");rect(35,-9,15,24,"#343b4e");
+    rect(-9,-20,20,12,"#bbc1c5");
+  }else if(e.kind==="slime"){
     ctx.fillStyle="#6dbd9b";ctx.beginPath();ctx.ellipse(0,-17,29,25,0,Math.PI,2*Math.PI);ctx.fill();
     rect(-11,-24,5,7,"#223a3d");rect(8,-24,5,7,"#223a3d");
   }else if(e.kind==="goblin"){
