@@ -4,7 +4,7 @@
 
 **[iPhone / ブラウザで遊ぶ（HTML試作）](https://cp-base.github.io/exiled-prince-and-maid/)**
 
-現在のv0.7試作では、内政・発見→装備と仲間の編成→横スクロール自動遠征→帰還というループに、敵撃破時の装備ドロップと3人目の仲間を追加しました。近接キャラは敵の前まで一緒に移動して攻撃し、遠距離キャラは後方から独立して攻撃します。村長の娘は初回交流後に10体目で救出でき、ポップアップを経て灰渡限定の仲間として編成できます。以後の交流は帰還時のランダムイベントになり、メイドの提案も抽選式です。ドロップ率・装備・仲間性能は試作用の仮仕様です。
+現在のv0.8試作では、噂を確定装備ドロップから情報収集へ戻し、敵の装備ドロップ率を低くしてお金・共通素材を追加。町では行商人を呼んで簡単な武器購入と素材売却ができます。試走用1倍/4倍速を切り替えられます。v0.7までの内政、近遠距離の独立自動戦闘、仲間編成、村長の娘の救出・交流は維持。数値・商品・噂の文章は仮の試験用です。
 
 ## 案内
 
@@ -14,9 +14,12 @@
 - [判断の記録](DECISIONS.md)：現在は記入用のひな型
 
 ## 最新の改修記録
+- [v0.8 噂・通貨素材・行商人・試走4倍速の改修記録](docs/V08_ECONOMY_RUMOR_SPEED.md)
 - [v0.7 ヒロイン救出ポップアップ・町限定仲間・ランダム提案](docs/V07_HEROINE_FLOW.md)
 - [v0.6 装備ドロップ・仲間編成・近遠距離同時戦闘の実装記録](docs/V06_LOOT_PARTY_COMBAT.md)
 - [v0.5 村長の娘と親密度イベントの実装記録](docs/V05_HEROINE_EVENTS.md)
 - [v0.4 内政・発見・出撃分離の実装記録](docs/V04_IMPLEMENTATION.md)
 - 最新テスト：`node tests/v07_heroine_flow.cjs`（過去バージョン専用のテストは変更前の仕様を検証します）
-- 過去版のモックDOM試験：`node tests/v06_loot_party_combat.cjs`、`node tests/v05_heroine_smoke.cjs`、`node tests/v04_smoke.cjs`（Node.js、追加パッケージ不要）
+- 過去版の最新版のモックDOM試験：`node tests/v08_economy_rumor_speed.cjs`、`node tests/v07_heroine_flow.cjs`（Node.js、追加パッケージ不要）。
+- 旧バージョンのテストは[tests/README](tests/README.md)参照。
+- 履歴テスト：`node tests/v06_loot_party_combat.cjs`、`node tests/v05_heroine_smoke.cjs`、`node tests/v04_smoke.cjs`（Node.js、追加パッケージ不要）
