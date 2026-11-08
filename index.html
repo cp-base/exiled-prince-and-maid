@@ -101,21 +101,33 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 .rescue-dialog button{width:100%;margin-top:10px;min-height:50px}
 .ally-banner{color:#f4d2a9;font-weight:700}
 .loot-rare{color:#f0cf82}.loot-uncommon{color:#85d8be}
+.resource-bar{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 13px}
+.resource-chip{display:flex;gap:8px;align-items:center;padding:8px 12px;background:#24383b;border:1px solid #4e6563;border-radius:9px;font-size:13px}
+.resource-chip strong{color:#f1cb79;font-variant-numeric:tabular-nums}
+.merchant-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.merchant-note{font-size:13px;color:var(--sub);line-height:1.7}
+#merchantOffers .item-row{margin:8px 0}
+#speedToggle{font-size:12px;background:#344b52;color:#f4eee1;border:1px solid #71848a;border-radius:8px;min-height:32px;padding:5px 9px;cursor:pointer}
+#speedToggle[aria-pressed="true"]{color:#ffe3a3;border-color:#f1cb79}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.7 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.8 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
     <div class="stat"><small>最長到達（撃破数）</small><strong id="best">0 体</strong></div>
     <div class="stat"><small>町の育成</small><strong id="townScore">0 / 5</strong></div>
   </section>
+  <div class="resource-bar" aria-label="町の資源">
+    <div class="resource-chip">🪙 所持金 <strong id="goldCount">0 G</strong></div>
+    <div class="resource-chip">🪨 共通素材 <strong id="materialCount">0</strong></div>
+  </div>
   <div id="goal" class="goal"><span><b>灰渡の目標</b>：街道 Lv3・工房 Lv2・遠征10体撃破</span><strong id="goalLabel">育成中</strong></div>
   <section class="stage" aria-label="横スクロールの遠征画面">
     <canvas id="scene" width="960" height="360" role="img" aria-label="王子とメイドが右へ進み、敵と自動で戦う"></canvas>
-    <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><strong id="encounterLabel">出撃前</strong></div>
+    <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><div><strong id="encounterLabel">出撃前</strong> <button id="speedToggle" type="button" aria-pressed="false">速度：1倍</button></div></div>
   </section>
   <section class="team" aria-label="二人の状態">
     <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div><div id="princeGear" class="gear-caption">装備：なし</div></div>
@@ -169,6 +181,13 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div id="partyRoster"></div>
     <p class="note">王子とメイドは固定。灰渡で救出した娘も、この町だけの遠征仲間として編成できます（最大3人）。</p>
   </section>
+  <section id="merchantPanel" class="card">
+    <div class="motto">町の交易</div><h2>行商人</h2>
+    <p id="merchantStatus" class="merchant-note">今は行商人がいません。町に呼んでみましょう。</p>
+    <div class="merchant-actions"><button id="inviteMerchant" class="item-button" type="button">行商人を呼ぶ</button></div>
+    <div id="merchantOffers"></div>
+    <p class="note">行商人は次の出撃まで滞在。共通素材を売ったり、所持金で簡単な武器を買えます（仮仕様）。</p>
+  </section>
   <section id="equipmentPanel" class="card">
     <div class="motto">帰還後に整える</div>
     <h2>見つけた装備</h2>
@@ -186,7 +205,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
     <div id="dropTicker" class="drop-ticker" hidden aria-live="polite"></div>
     <div id="battleHeroineEvent" class="loot-report" hidden aria-live="polite"></div>
-    <p class="note">敵を倒すたびに戦利品を抽選。近接は敵の前へ、遠距離は後方から攻撃。参加者全員が倒れたら自動帰還します。</p>
+    <p class="note">敵からお金と共通素材、低確率で装備を獲得。速度は上のボタンで切り替え可能。参加者全員が倒れたら帰還します。</p>
   </section>
   <section id="resultPanel" class="card" hidden>
     <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
@@ -209,23 +228,25 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <button id="rescueContinue" class="primary" type="button">冒険を続ける</button>
   </div>
 </div>
-<footer>v0.7：救出ポップアップ、村長の娘の灰渡限定加入、帰還後交流、提案のランダム抽選を試す仮実装です。ドロップ率・装備能力は仮設定。再読み込みで初期化されます。</footer>
+<footer>v0.8：噂は情報収集に変更。装備ドロップを減らし、お金・共通素材・行商人・4倍速を追加。数値は仮設定。再読み込みで初期化されます。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",currentTown:"haiwatari",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,firstExchange:false,joined:false,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null,daughter:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22},daughter:{atk:3,max:20,hp:20}};
+var state={phase:"town",currentTown:"haiwatari",runs:0,best:0,town:{road:0,forge:0},goal:false,gold:0,materials:0,merchant:{visiting:false,visits:0,purchases:0},rumors:[],items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,firstExchange:false,joined:false,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null,daughter:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22},daughter:{atk:3,max:20,hp:20}};
 var planning=null;
-var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0,rescueWaiting:false};
-var frameAt=0,clock=0;
+var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],gold:0,materials:0,shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",development:null,rescueText:null,rescuePause:0,rescueWaiting:false};
+var frameAt=0,clock=0,speedMultiplier=1;
+$("speedToggle").addEventListener("click",function(){
+  speedMultiplier=speedMultiplier===1?4:1;
+  $("speedToggle").textContent="速度："+speedMultiplier+"倍";
+  $("speedToggle").setAttribute("aria-pressed",speedMultiplier===4?"true":"false");
+});
 // ここから下の発見条件・装備数値は試作用の仮データ。
-var itemData={
-  old_sword:{name:"古い騎士の剣",bonus:3,at:2,mode:"melee",speed:.9,rarity:"固定",detail:"街道で見つかった古びた剣"},
-  forest_staff:{name:"森の木霊杖",bonus:4,at:4,mode:"ranged",speed:1.15,rarity:"固定",detail:"森の奥で見つかる不思議な杖"},
-  bandit_dagger:{name:"銀の短剣",bonus:6,at:6,mode:"melee",speed:.72,rarity:"固定",detail:"古い道に残された武具"}
-};
+// v0.8: 噂の固定装備は廃止。敵と商人から得る個体の装備データ。
+var itemData={};
 var lootTypes=[
   {name:"鉄の剣",mode:"melee",bonus:2,speed:.93},
   {name:"狩人の弓",mode:"ranged",bonus:2,speed:1.18},
@@ -240,19 +261,26 @@ function townAllies(){return state.people.concat(state.currentTown==="haiwatari"
 function gearMode(id){var gear=item(state.equipment[id]);return gear?gear.mode:((id==="maid"||id==="daughter")?"ranged":"melee");}
 function equipmentBonus(gear){return gear?gear.bonus+state.town.forge+(hasFind("craft_notes")?1:0):0;}
 function totalAttack(actor){return state[actor].atk+equipmentBonus(item(state.equipment[actor]));}
-function requiredKills(id){var gear=item(id);return gear?Math.max(1,gear.at-(hasFind("road_map")?1:0)):0;}
 function attackInterval(id){var gear=item(state.equipment[id]);return gear&&gear.speed?gear.speed:(gearMode(id)==="ranged"?1.12:.9);}
 function makeLoot(enemy){
-  if(Math.random()>=(enemy.kind==="boss"?1:.28))return null;
+  // 既存の通常28%・ボス確定から通常7%・ボス25%へ（試験値）。
+  if(Math.random()>=(enemy.kind==="boss"?.25:.07))return null;
   var base=lootTypes[Math.floor(Math.random()*lootTypes.length)];
   var roll=Math.random(),tier=roll<.06?2:roll<.24?1:0;
   var quality=tier===2?"希少な":tier===1?"良質な":"";
   var uid="loot_"+state.runs+"_"+battle.kills+"_"+battle.drops.length;
   itemData[uid]={name:quality+base.name,bonus:base.bonus+tier*2+Math.min(6,Math.floor((battle.kills-1)/6)),mode:base.mode,speed:base.speed,rarity:tier===2?"希少":tier===1?"良品":"通常",detail:"第"+battle.kills+"戦・"+enemy.name+"からの戦利品"};
   battle.drops.push(uid);
-  $("dropTicker").hidden=false;
-  $("dropTicker").textContent="戦利品 "+battle.drops.length+"個：直近 "+itemData[uid].name+"（攻撃 +"+itemData[uid].bonus+" / "+(base.mode==="melee"?"近接":"遠距離")+"）";
   return uid;
+}
+function collectBattleRewards(enemy){
+  var gainedGold=1+Math.floor(Math.random()*3)+(enemy.kind==="boss"?2:0);
+  var gainedMaterials=(Math.random()<(hasFind("road_map")?.5:.4)?1:0)+(enemy.kind==="boss"?1:0);
+  battle.gold+=gainedGold;battle.materials+=gainedMaterials;
+  var gear=makeLoot(enemy);
+  $("dropTicker").hidden=false;
+  $("dropTicker").textContent="今回の遠征：🪙 "+battle.gold+" G / 🪨 共通素材 "+battle.materials+" / 武器 "+battle.drops.length+"個"+(gear?"　★ "+item(gear).name+"を発見！":"");
+  return gear;
 }
 var mapGoal={road:3,forge:2,kills:10}; // 灰渡v0.3限定の仮ゴール
 var roadScenes=[
@@ -281,16 +309,28 @@ function advanceTown(which){
   }
   return null;
 }
-function nextRumor(){
-  if(state.items.indexOf("old_sword")<0)return {id:"old_sword",title:"街道に古い剣があるそうです！",effect:"敵を2体倒せば剣を発見",speech:"「王子さま、街道の草むらに剣が落ちているという噂です！　探してみませんか？」"};
-  if(state.items.indexOf("forest_staff")<0&&state.best>=2&&state.town.road>=1)return {id:"forest_staff",title:"森の奥で光を見たそうです！",effect:"敵を4体倒せば杖を発見",speech:"「森で光る枝を見た人がいるんですって。少し奥まで行ってみませんか？」"};
-  if(state.items.indexOf("bandit_dagger")<0&&state.best>=5&&state.town.road>=2)return {id:"bandit_dagger",title:"古い道に武具庫の跡が！",effect:"敵を6体倒せば短剣を発見",speech:"「古い道に隠れた武具庫があるみたいです。遠征で確かめましょう！」"};
-  return null;
+// うわさ話は情報収集のみ。アイテム確定入手や特殊報酬は発生しない。
+var rumorData=[
+  {level:0,text:"街道の草むらには、まだ獣の足跡が多いらしい。"},
+  {level:0,text:"このところ町の外でスライムをよく見かけるそうです。"},
+  {level:0,text:"旅人が、森の向こうにも古い道が続くと話していました。"},
+  {level:1,text:"森の奥では夜になると狼の遠吠えが聞こえるそうです。"},
+  {level:1,text:"行商人が、森の先の村の話をしていたそうです。"},
+  {level:2,text:"古い道には昔の石畳が残っているらしい。"},
+  {level:3,text:"街道が整い、遠くからも旅人が来るようになったそうです。"}
+];
+function hearRumor(){
+  var candidates=rumorData.filter(function(r){return state.town.road>=r.level;});
+  var unheard=candidates.filter(function(r){return state.rumors.indexOf(r.text)<0;});
+  if(!unheard.length)unheard=candidates;
+  var picked=unheard[Math.floor(Math.random()*unheard.length)].text;
+  state.rumors.push(picked);
+  return "うわさ話：『"+picked+"』";
 }
 // 町の発見物・出現率は試作用。装備アイテムとは独立して保持する。
 var townFindData={
   craft_notes:{kind:"item",name:"工房の手入れ帳",effect:"装備品の攻撃補正 +1",weight:3,topic:"forge"},
-  road_map:{kind:"item",name:"古い道案内の図",effect:"噂の探索に必要な撃破数 -1",weight:3,topic:"road"},
+  road_map:{kind:"item",name:"古い道案内の図",effect:"共通素材のドロップ率 +10%",weight:3,topic:"road"},
   apprentice:{kind:"person",name:"旅の鍛冶見習い",effect:"仲間として加入（遠征の編成・装備が可能）",weight:1,topic:"forge"}
 };
 function availableTownFinds(){
@@ -386,8 +426,8 @@ function renderRelationships(){
   });
 }
 function getProposals(){
-  var rumor=nextRumor(),proposals=[];
-  if(rumor)proposals.push({title:rumor.title,effect:"指定の敵数を倒すと特別な装備が確定ドロップ。通常ドロップも発生",apply:function(){return {hunt:rumor.id};}});
+  var proposals=[];
+  proposals.push({title:"うわさ話を聞いてみましょう！",effect:"街道や町のうわさ話をひとつ聞く（装備報酬なし）",apply:function(){return {rumor:hearRumor()};}});
   if(state.town.road<mapGoal.road)proposals.push({
     title:"街道を整えましょう！",effect:"街道の整備 +1 / 新しい噂が届く",topic:"road",
     apply:function(){return {development:advanceTown("road")};}
@@ -422,11 +462,53 @@ function rollProposals(){
   }
   return chosen;
 }
+// 簡易行商人。都度呼べるが滞在は次回出撃まで。価格・品は試験値。
+var merchantGoods=[
+  {name:"行商人の鉄剣",bonus:2,mode:"melee",speed:.95,price:10},
+  {name:"行商人の短弓",bonus:2,mode:"ranged",speed:1.15,price:10}
+];
+function renderMerchant(){
+  var visiting=state.merchant.visiting;
+  $("merchantStatus").textContent=visiting?"行商人が広場に店を開いています。現在の所持金は"+state.gold+" G。":"今は行商人がいません。呼ぶと次の遠征まで町に滞在します。";
+  $("inviteMerchant").hidden=visiting;
+  var box=$("merchantOffers");box.textContent="";
+  if(!visiting)return;
+  merchantGoods.forEach(function(g){
+    var row=document.createElement("div");row.className="item-row";
+    var label=document.createElement("div");label.className="item-name";
+    label.textContent=g.name+"（"+(g.mode==="melee"?"近接":"遠距離")+"・攻撃 +"+g.bonus+"）";
+    var cost=document.createElement("small");cost.textContent="価格："+g.price+" G";label.appendChild(cost);
+    var button=document.createElement("button");button.type="button";button.className="item-button";
+    button.textContent="購入";button.disabled=state.gold<g.price;
+    button.addEventListener("click",function(){
+      if(state.phase!=="town"||!state.merchant.visiting||state.gold<g.price)return;
+      state.gold-=g.price;
+      var uid="shop_"+state.merchant.visits+"_"+state.merchant.purchases++;
+      itemData[uid]={name:g.name,bonus:g.bonus,mode:g.mode,speed:g.speed,rarity:"通常",detail:"行商人から購入"};
+      state.items.push(uid);renderEquipment();renderMerchant();refreshStats();
+    });
+    row.appendChild(label);row.appendChild(button);box.appendChild(row);
+  });
+  var sale=document.createElement("div");sale.className="item-row";
+  var name=document.createElement("div");name.className="item-name";
+  name.textContent="共通素材を1個売る（+2 G）";
+  var button=document.createElement("button");button.className="item-button";button.type="button";
+  button.textContent="素材を売却";button.disabled=state.materials<1;
+  button.addEventListener("click",function(){
+    if(state.phase!=="town"||!state.merchant.visiting||state.materials<1)return;
+    state.materials--;state.gold+=2;renderMerchant();refreshStats();
+  });
+  sale.appendChild(name);sale.appendChild(button);box.appendChild(sale);
+}
+$("inviteMerchant").addEventListener("click",function(){
+  if(state.phase!=="town"||state.merchant.visiting)return;
+  state.merchant.visiting=true;state.merchant.visits++;renderMerchant();
+});
 function renderEquipment(){
   var box=$("inventory");box.textContent="";
   if(state.items.length===0){
     var empty=document.createElement("p");empty.className="note";
-    empty.textContent="まだ装備はありません。メイドの噂を選んで遠征してみよう。";
+    empty.textContent="まだ装備はありません。遠征でのドロップや行商人の品物を探してみよう。";
     box.appendChild(empty);return;
   }
   state.items.slice().sort(function(a,b){return (item(a).rarity==="固定"?-1:0)-(item(b).rarity==="固定"?-1:0);}).forEach(function(id){
@@ -495,6 +577,8 @@ function renderFinds(){
 }
 function refreshStats(){
   $("runs").textContent=String(state.runs);
+  $("goldCount").textContent=state.gold+" G";
+  $("materialCount").textContent=String(state.materials);
   $("best").textContent=state.best+" 体";
   $("townScore").textContent=(state.town.road+state.town.forge)+" / "+(mapGoal.road+mapGoal.forge);
   $("roadLevel").textContent=state.town.road+" / "+mapGoal.road;
@@ -538,6 +622,7 @@ function show(phase){
   $("developmentPanel").hidden=phase!=="town";
   $("findsPanel").hidden=phase!=="town";
   $("partyPanel").hidden=phase!=="town";
+  $("merchantPanel").hidden=phase!=="town";
   $("relationshipPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
@@ -560,8 +645,8 @@ function renderChoices(){
 function selectProposal(p){
   if(state.phase!=="town"||planning)return;
   var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null,relationship=outcome.relationship||null;
-  planning={title:p.title,hunt:outcome.hunt||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship};
-  var summary="【"+p.title+"】\n"+(planning.development||(planning.hunt?"噂の調査を遠征で行います。":"今回は内政を行いません。"));
+  planning={title:p.title,rumor:outcome.rumor||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship};
+  var summary="【"+p.title+"】\n"+(planning.development||planning.rumor||"今回は内政を行いません。");
   if(p.topic)summary+="\n"+(event||"今回は特別な発見はありませんでした。");
   if(relationship)summary+="\n【村長の娘】"+relationship;
   $("proposalReport").textContent=summary;$("proposalReport").style.whiteSpace="pre-line";
@@ -570,14 +655,14 @@ function selectProposal(p){
 function startRun(){
   if(state.phase!=="town"||!planning)return;
   var plan=planning;planning=null;state.runs++;
+  state.merchant.visiting=false;
   state.party.forEach(function(id){state[id].hp=state[id].max;});
-  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205,daughter:132},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0,rescueWaiting:false};
+  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205,daughter:132},drops:[],gold:0,materials:0,shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0,rescueWaiting:false};
   state.party.forEach(function(id){battle.timers[id]=id==="prince"?.4:id==="maid"?.8:.6;});
   $("battleHeroineEvent").hidden=true;
   $("rescueModal").hidden=true;
   $("dropTicker").hidden=true;$("dropTicker").textContent="";
-  var gear=item(plan.hunt);
-  $("expeditionLead").textContent=gear?"噂の特別ドロップ："+gear.name+"（"+requiredKills(plan.hunt)+"体撃破で確定）":"敵を倒して装備ドロップを狙おう！";
+  $("expeditionLead").textContent="敵から所持金・共通素材・低確率の装備を集めよう。";
   $("battleMsg").textContent=battle.message;spawnEnemy();show("battle");
 }
 $("departButton").addEventListener("click",startRun);
@@ -605,7 +690,7 @@ function strike(id){
     battle.kills++;battle.nextTimer=.65;
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
     if(battle.kills>state.best)state.best=battle.kills;
-    var loot=makeLoot(enemy);
+    var loot=collectBattleRewards(enemy);
     if(loot)say(enemy.name+"が「"+item(loot).name+"」をドロップ！");
     if(battle.kills===10&&daughter().firstExchange&&!daughter().rescued){
       battle.rescueText=rescueDaughter();
@@ -619,11 +704,6 @@ function strike(id){
       say("10体目突破！ 村長の娘を救出した！");
     }
     if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
-    if(battle.hunt&&!battle.found&&battle.kills>=requiredKills(battle.hunt)){
-      battle.found=battle.hunt;
-      say("特別ドロップ！　"+item(battle.found).name+"を確保しました！");
-      $("expeditionLead").textContent="特別ドロップ済み："+item(battle.found).name;
-    }
     if(battle.kills%4===0&&Math.random()<.45){
       state.party.forEach(function(actor){state[actor].hp=Math.min(state[actor].max,state[actor].hp+5);});
       say("道ばたで薬草を発見！　遠征メンバーのHPが5回復。");
@@ -680,14 +760,10 @@ function endRun(){
     state.party.push("daughter");
   }
   var postBattleText=battle.rescueText?null:postBattleRelationshipEvent();
+  state.gold+=battle.gold;state.materials+=battle.materials;
   var rewards=[];
-  if(battle.found&&state.items.indexOf(battle.found)<0){
-    state.items.push(battle.found);rewards.push(item(battle.found).name+"（噂）");
-  }
   battle.drops.forEach(function(id){state.items.push(id);rewards.push(item(id).name);});
-  $("lootReport").textContent=rewards.length?
-    (battle.found?item(battle.found).name+"を持ち帰りました。 ":"")+"今回の戦利品 "+rewards.length+"個："+rewards.slice(0,12).join("、")+(rewards.length>12?" ほか"+(rewards.length-12)+"個":"")+"。帰還後に装備できます。":
-    "今回は装備のドロップなし。次の遠征でまた挑戦！";
+  $("lootReport").textContent="今回の収穫：🪙 "+battle.gold+" G / 🪨 共通素材 "+battle.materials+"。"+(rewards.length?"　装備 "+rewards.length+"個："+rewards.slice(0,8).join("、")+(rewards.length>8?" ほか"+(rewards.length-8)+"個":""):"　装備のドロップはありませんでした。");
   $("heroineResult").hidden=!battle.rescueText;
   $("heroineResult").textContent=battle.rescueText||"";
   $("postBattleHeroine").hidden=!postBattleText;
@@ -706,7 +782,7 @@ function endRun(){
 $("backButton").addEventListener("click",function(){
   if(state.phase!=="result")return;
   state.party.forEach(function(id){state[id].hp=state[id].max;});
-  renderChoices();renderEquipment();renderFinds();renderParty();renderRelationships();show("town");
+  renderChoices();renderEquipment();renderFinds();renderParty();renderMerchant();renderRelationships();show("town");
 });
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function poly(points,color){
@@ -831,10 +907,14 @@ function drawScene(t){
 function loop(now){
   if(!frameAt)frameAt=now;
   var dt=Math.min(.045,(now-frameAt)/1000);frameAt=now;clock+=dt;
-  update(dt*1.45);drawScene(clock);
+  var accelerated=dt*1.45*speedMultiplier;
+  while(accelerated>0){
+    var step=Math.min(accelerated,.045);update(step);accelerated-=step;
+  }
+  drawScene(clock);
   requestAnimationFrame(loop);
 }
-meetDaughter();renderChoices();renderEquipment();renderFinds();renderParty();renderRelationships();show("town");requestAnimationFrame(loop);
+meetDaughter();renderChoices();renderEquipment();renderFinds();renderParty();renderMerchant();renderRelationships();show("town");requestAnimationFrame(loop);
 })();
 </script>
 </body>
