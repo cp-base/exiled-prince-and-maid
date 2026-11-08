@@ -322,7 +322,7 @@ function collectBattleRewards(enemy){
   $("dropTicker").textContent="今回の遠征：🪙 "+battle.gold+" G / 🪨 共通素材 "+battle.materials+" / 武器 "+battle.drops.length+"個"+(gear?"　★ "+item(gear).name+"を発見！":"");
   return gear;
 }
-var mapGoal={road:3,forge:2,kills:10}; // 灰渡v0.3限定の仮ゴール
+var mapGoal={road:3,forge:2}; // 町育成の仮上限。章クリアは森の大狼との決戦。
 var roadScenes=[
   "草に埋もれた街道。遠くの噂は届かない。",
   "道が通り、森の奥の噂が届くようになった。",
@@ -514,7 +514,7 @@ function renderRelationships(){
   $("relationValue").textContent=d.affinity+" / 5";
   $("relationHearts").textContent="♥ ".repeat(d.affinity)+"♡ ".repeat(5-d.affinity);
   $("relationScene").textContent=d.scene;
-  $("relationMembership").textContent=d.joined?"💗 灰渡限定の仲間":d.firstExchange?"10体目で救出可能":"町の重要人物";
+  $("relationMembership").textContent=d.joined?"💗 灰渡限定の仲間":d.firstExchange?"4体目で救出可能":"町の重要人物";
   $("relationTip").textContent=d.joined?
     "灰渡限定の仲間として編成できます。これからの交流は帰還後にランダムで発生します。":
     d.firstExchange?"最初の交流を終えました。通常遠征4体目の救出へ！":
