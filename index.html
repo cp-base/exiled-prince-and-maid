@@ -89,11 +89,16 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 .relation-log{padding-left:20px;color:var(--sub);font-size:12px;line-height:1.8}
 .relation-tag{color:var(--gold);font-size:12px}
 .find-entry b{font-size:14px}.find-entry small{display:block;color:var(--sub);margin-top:4px;line-height:1.6}
+.ally-note{color:var(--sub);font-size:12px;margin-top:6px}
+#partyPanel .item-row{margin:8px 0}
+.combat-flag{font-size:12px;color:var(--mint)}
+.drop-ticker{margin:10px 0 0;padding:9px 12px;border:1px solid #816d44;border-radius:8px;background:#352e22;color:#f6d99d;font-size:13px;line-height:1.6}
+.loot-rare{color:#f0cf82}.loot-uncommon{color:#85d8be}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.5 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.6 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -108,6 +113,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
   <section class="team" aria-label="二人の状態">
     <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div><div id="princeGear" class="gear-caption">装備：なし</div></div>
     <div class="character"><div class="character-head"><b>🧹 メイド</b><small id="maidText">HP 24/24　攻撃 3</small></div><div class="bar"><i id="maidBar"></i></div><div id="maidGear" class="gear-caption">装備：なし</div></div>
+    <div class="character" id="apprenticeCard" hidden><div class="character-head"><b>🛠 鍛冶見習い</b><small id="apprenticeText">HP 22/22　攻撃 2</small></div><div class="bar"><i id="apprenticeBar"></i></div><div id="apprenticeGear" class="gear-caption">装備：なし</div><div id="apprenticeStatus" class="ally-note">遠征に参加</div></div>
   </section>
   <section id="townPanel" class="card">
     <div class="motto">町で準備する</div>
@@ -150,23 +156,29 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     </div>
     <p id="townGuidance" class="note">メイドの提案で町を育てよう。街道は噂の範囲を広げ、工房は装備品の効果を高める。資源の収支計算はなし。</p>
   </section>
+  <section id="partyPanel" class="card">
+    <div class="motto">遠征メンバー</div><h2>仲間の編成</h2>
+    <div id="partyRoster"></div>
+    <p class="note">王子とメイドは固定。町で出会った仲間は遠征に参加・待機を切り替えられます（この試作では最大3人）。</p>
+  </section>
   <section id="equipmentPanel" class="card">
     <div class="motto">帰還後に整える</div>
     <h2>見つけた装備</h2>
     <div id="inventory" class="inventory"></div>
-    <p class="note">装備はそれぞれ1つまで。同じ品を二人が同時に使うことはできません。町にいる間だけ変更できます。</p>
+    <p class="note">装備は1人1つまで。同じ個体を同時に複数人が使うことはできません。武器の種類によって近接・遠距離が変わります。町でのみ変更可能。</p>
   </section>
   <section id="findsPanel" class="card">
     <div class="motto">町で得たもの</div><h2>技術品と人材</h2>
     <div id="findsList" class="finds-list"></div>
-    <p class="note">装備以外の発見も町に残ります。ここで見つかる人材は遠征メンバーではありません。</p>
+    <p class="note">技術品は町の効果として蓄積。人材を発見すると仲間として迎え、遠征へ編成できます。</p>
   </section>
   <section id="battlePanel" class="card" hidden aria-live="off">
     <div class="battle-header"><div><div class="motto">自動遠征中</div><h2 id="battleTitle">街道を進んでいます…</h2></div><div class="enemy-meter"><div class="character-head"><b id="enemyName">敵</b><small id="enemyHp">HP --</small></div><div class="bar"><i id="enemyBar"></i></div></div></div>
     <div id="expeditionLead" class="lead"></div>
     <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
+    <div id="dropTicker" class="drop-ticker" hidden aria-live="polite"></div>
     <div id="battleHeroineEvent" class="loot-report" hidden aria-live="polite"></div>
-    <p class="note">敵を倒すたびに次の敵が強くなります。二人が倒れたら自動帰還します。</p>
+    <p class="note">敵を倒すたびに戦利品を抽選。近接は敵の前へ、遠距離は後方から攻撃。参加者全員が倒れたら自動帰還します。</p>
   </section>
   <section id="resultPanel" class="card" hidden>
     <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
@@ -178,28 +190,50 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
   </section>
 </main>
-<footer>v0.5：v0.4の内政・遠征に村長の娘との交流・救出を追加した仮実装です。町の能力値やイベント内容は仮設定。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
+<footer>v0.6：敵からの装備ドロップ、仲間編成、近接・遠距離の独立攻撃を試す仮実装です。v0.5の交流イベントは維持。ドロップ率・装備能力は仮設定。再読み込みで初期化されます。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
+var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22}};
 var planning=null;
-var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0};
+var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0};
 var frameAt=0,clock=0;
 // ここから下の発見条件・装備数値は試作用の仮データ。
 var itemData={
-  old_sword:{name:"古い騎士の剣",bonus:3,at:2,detail:"街道で見つかった古びた剣"},
-  forest_staff:{name:"森の木霊杖",bonus:4,at:4,detail:"森の奥で見つかる不思議な杖"},
-  bandit_dagger:{name:"銀の短剣",bonus:6,at:6,detail:"古い道に残された武具"}
+  old_sword:{name:"古い騎士の剣",bonus:3,at:2,mode:"melee",speed:.9,rarity:"固定",detail:"街道で見つかった古びた剣"},
+  forest_staff:{name:"森の木霊杖",bonus:4,at:4,mode:"ranged",speed:1.15,rarity:"固定",detail:"森の奥で見つかる不思議な杖"},
+  bandit_dagger:{name:"銀の短剣",bonus:6,at:6,mode:"melee",speed:.72,rarity:"固定",detail:"古い道に残された武具"}
 };
+var lootTypes=[
+  {name:"鉄の剣",mode:"melee",bonus:2,speed:.93},
+  {name:"狩人の弓",mode:"ranged",bonus:2,speed:1.18},
+  {name:"木の杖",mode:"ranged",bonus:1,speed:1.02},
+  {name:"短剣",mode:"melee",bonus:1,speed:.72},
+  {name:"古い槍",mode:"melee",bonus:2,speed:1.08}
+];
 function item(id){return id?itemData[id]:null;}
 function hasFind(id){return state.finds.indexOf(id)>=0;}
-function equipmentBonus(gear){return gear?gear.bonus+state.town.forge+(hasFind("craft_notes")?1:0)+(state.people.indexOf("apprentice")>=0?1:0):0;}
+function combatName(id){return {prince:"王子",maid:"メイド",apprentice:"鍛冶見習い"}[id]||id;}
+function gearMode(id){var gear=item(state.equipment[id]);return gear?gear.mode:(id==="maid"?"ranged":"melee");}
+function equipmentBonus(gear){return gear?gear.bonus+state.town.forge+(hasFind("craft_notes")?1:0):0;}
 function totalAttack(actor){return state[actor].atk+equipmentBonus(item(state.equipment[actor]));}
 function requiredKills(id){var gear=item(id);return gear?Math.max(1,gear.at-(hasFind("road_map")?1:0)):0;}
+function attackInterval(id){var gear=item(state.equipment[id]);return gear&&gear.speed?gear.speed:(gearMode(id)==="ranged"?1.12:.9);}
+function makeLoot(enemy){
+  if(Math.random()>=(enemy.kind==="boss"?1:.28))return null;
+  var base=lootTypes[Math.floor(Math.random()*lootTypes.length)];
+  var roll=Math.random(),tier=roll<.06?2:roll<.24?1:0;
+  var quality=tier===2?"希少な":tier===1?"良質な":"";
+  var uid="loot_"+state.runs+"_"+battle.kills+"_"+battle.drops.length;
+  itemData[uid]={name:quality+base.name,bonus:base.bonus+tier*2+Math.min(6,Math.floor((battle.kills-1)/6)),mode:base.mode,speed:base.speed,rarity:tier===2?"希少":tier===1?"良品":"通常",detail:"第"+battle.kills+"戦・"+enemy.name+"からの戦利品"};
+  battle.drops.push(uid);
+  $("dropTicker").hidden=false;
+  $("dropTicker").textContent="戦利品 "+battle.drops.length+"個：直近 "+itemData[uid].name+"（攻撃 +"+itemData[uid].bonus+" / "+(base.mode==="melee"?"近接":"遠距離")+"）";
+  return uid;
+}
 var mapGoal={road:3,forge:2,kills:10}; // 灰渡v0.3限定の仮ゴール
 var roadScenes=[
   "草に埋もれた街道。遠くの噂は届かない。",
@@ -237,7 +271,7 @@ function nextRumor(){
 var townFindData={
   craft_notes:{kind:"item",name:"工房の手入れ帳",effect:"装備品の攻撃補正 +1",weight:3,topic:"forge"},
   road_map:{kind:"item",name:"古い道案内の図",effect:"噂の探索に必要な撃破数 -1",weight:3,topic:"road"},
-  apprentice:{kind:"person",name:"旅の鍛冶見習い",effect:"装備品の攻撃補正 +1",weight:1,topic:"forge"}
+  apprentice:{kind:"person",name:"旅の鍛冶見習い",effect:"仲間として加入（遠征の編成・装備が可能）",weight:1,topic:"forge"}
 };
 function availableTownFinds(){
   return Object.keys(townFindData).filter(function(id){
@@ -255,7 +289,7 @@ function rollTownFind(topic){
   var draw=Math.random()*total,found=possible[possible.length-1];
   for(var i=0;i<possible.length;i++){draw-=townFindData[possible[i]].weight;if(draw<0){found=possible[i];break;}}
   var data=townFindData[found];
-  if(data.kind==="person")state.people.push(found);else state.finds.push(found);
+  if(data.kind==="person"){state.people.push(found);if(state.party.indexOf(found)<0)state.party.push(found);}else state.finds.push(found);
   return "発見！ "+data.name+"（"+data.effect+"）";
 }
 // 親密度の値とイベント内容は仮置き。住人の自律行動は行わない。
@@ -325,7 +359,7 @@ function renderRelationships(){
 }
 function getProposals(){
   var rumor=nextRumor(),proposals=[];
-  if(rumor)proposals.push({title:rumor.title,effect:"遠征で敵を"+requiredKills(rumor.id)+"体倒せば発見",apply:function(){return {hunt:rumor.id};}});
+  if(rumor)proposals.push({title:rumor.title,effect:"指定の敵数を倒すと特別な装備が確定ドロップ。通常ドロップも発生",apply:function(){return {hunt:rumor.id};}});
   if(state.town.road<mapGoal.road)proposals.push({
     title:"街道を整えましょう！",effect:"街道の整備 +1 / 新しい噂が届く",topic:"road",
     apply:function(){return {development:advanceTown("road")};}
@@ -353,30 +387,56 @@ function renderEquipment(){
     empty.textContent="まだ装備はありません。メイドの噂を選んで遠征してみよう。";
     box.appendChild(empty);return;
   }
-  state.items.forEach(function(id){
+  state.items.slice().sort(function(a,b){return (item(a).rarity==="固定"?-1:0)-(item(b).rarity==="固定"?-1:0);}).forEach(function(id){
     var gear=item(id),row=document.createElement("div");row.className="item-row";
     var label=document.createElement("div");label.className="item-name";
-    label.textContent=gear.name+"（現在の装備補正 +"+equipmentBonus(gear)+"）";
+    label.textContent=gear.name+"（"+(gear.mode==="ranged"?"遠距離":"近接")+"・攻撃補正 +"+equipmentBonus(gear)+"）";
     var info=document.createElement("small");info.textContent=gear.detail;label.appendChild(info);
     var actions=document.createElement("div");actions.className="item-actions";
-    ["prince","maid"].forEach(function(who){
+    ["prince","maid"].concat(state.people).forEach(function(who){
       var equipped=state.equipment[who]===id;
       var button=document.createElement("button");button.type="button";
       button.className="item-button"+(equipped?" active":"");
-      button.textContent=(who==="prince"?"王子":"メイド")+(equipped?"：外す":"に装備");
+      button.textContent=combatName(who)+(equipped?"：外す":"に装備");
       button.addEventListener("click",function(){
         if(state.phase!=="town")return;
         if(state.equipment[who]===id){state.equipment[who]=null;}
         else{
-          var other=who==="prince"?"maid":"prince";
-          if(state.equipment[other]===id)state.equipment[other]=null;
+          Object.keys(state.equipment).forEach(function(other){
+            if(other!==who&&state.equipment[other]===id)state.equipment[other]=null;
+          });
           state.equipment[who]=id;
         }
-        refreshStats();renderEquipment();
+        refreshStats();renderEquipment();renderParty();
       });
       actions.appendChild(button);
     });
     row.appendChild(label);row.appendChild(actions);box.appendChild(row);
+  });
+}
+function renderParty(){
+  var box=$("partyRoster");box.textContent="";
+  if(!state.people.length){
+    var p=document.createElement("p");p.className="note";
+    p.textContent="まだ仲間は加入していません。町で人材を発見すると迎え入れられます。";
+    box.appendChild(p);return;
+  }
+  state.people.forEach(function(id){
+    var row=document.createElement("div");row.className="item-row";
+    var label=document.createElement("div");label.className="item-name";
+    label.textContent=townFindData[id].name;
+    var note=document.createElement("small");
+    note.textContent="攻撃 "+totalAttack(id)+" / "+(gearMode(id)==="ranged"?"遠距離":"近接")+" / "+(state.party.indexOf(id)>=0?"出撃メンバー":"町で待機");
+    label.appendChild(note);
+    var btn=document.createElement("button");btn.type="button";btn.className="item-button";
+    btn.textContent=state.party.indexOf(id)>=0?"今回は待機":"遠征に参加";
+    btn.addEventListener("click",function(){
+      if(state.phase!=="town")return;
+      if(state.party.indexOf(id)>=0)state.party=state.party.filter(function(x){return x!==id;});
+      else if(state.party.length<3)state.party.push(id);
+      renderParty();refreshStats();
+    });
+    row.appendChild(label);row.appendChild(btn);box.appendChild(row);
   });
 }
 function renderFinds(){
@@ -406,7 +466,15 @@ function refreshStats(){
   $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+totalAttack("prince");
   $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+totalAttack("maid");
   $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし");
-  $("maidGear").textContent="装備："+(item(state.equipment.maid)?item(state.equipment.maid).name:"なし");
+  $("maidGear").textContent="装備："+(item(state.equipment.maid)?item(state.equipment.maid).name:"なし")+"（"+(gearMode("maid")==="ranged"?"遠距離":"近接")+"）";
+  $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし")+"（"+(gearMode("prince")==="ranged"?"遠距離":"近接")+"）";
+  $("apprenticeCard").hidden=state.people.indexOf("apprentice")<0;
+  if(state.people.indexOf("apprentice")>=0){
+    $("apprenticeText").textContent="HP "+Math.ceil(state.apprentice.hp)+"/"+state.apprentice.max+"　攻撃 "+totalAttack("apprentice");
+    $("apprenticeBar").style.width=100*state.apprentice.hp/state.apprentice.max+"%";
+    $("apprenticeGear").textContent="装備："+(item(state.equipment.apprentice)?item(state.equipment.apprentice).name:"なし")+"（"+(gearMode("apprentice")==="ranged"?"遠距離":"近接")+"）";
+    $("apprenticeStatus").textContent=state.party.indexOf("apprentice")>=0?"遠征に参加":"今回は待機";
+  }
   $("princeBar").style.width=100*state.prince.hp/state.prince.max+"%";
   $("maidBar").style.width=100*state.maid.hp/state.maid.max+"%";
   state.goal=mapGoalReached();
@@ -419,10 +487,11 @@ function show(phase){
   $("equipmentPanel").hidden=phase!=="town";
   $("developmentPanel").hidden=phase!=="town";
   $("findsPanel").hidden=phase!=="town";
+  $("partyPanel").hidden=phase!=="town";
   $("relationshipPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
-  $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"王子とメイドの自動遠征中":"町へ帰還しました";
+  $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"遠征メンバーの自動戦闘中":"町へ帰還しました";
   $("encounterLabel").textContent=phase==="town"?"出撃前":phase==="result"?"今回 "+battle.kills+" 体撃破":"第"+(battle.kills+1)+"戦";
   refreshStats();
 }
@@ -447,16 +516,18 @@ function selectProposal(p){
   if(p.topic)summary+="\n"+(event||"今回は特別な発見はありませんでした。");
   if(relationship)summary+="\n【村長の娘】"+relationship;
   $("proposalReport").textContent=summary;$("proposalReport").style.whiteSpace="pre-line";
-  renderChoices();renderEquipment();renderFinds();renderRelationships();refreshStats();
+  renderChoices();renderEquipment();renderFinds();renderParty();renderRelationships();refreshStats();
 }
 function startRun(){
   if(state.phase!=="town"||!planning)return;
   var plan=planning;planning=null;state.runs++;
-  state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0};
+  state.party.forEach(function(id){state[id].hp=state[id].max;});
+  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0};
+  state.party.forEach(function(id){battle.timers[id]=id==="prince"?.4:id==="maid"?.8:.6;});
   $("battleHeroineEvent").hidden=true;
+  $("dropTicker").hidden=true;$("dropTicker").textContent="";
   var gear=item(plan.hunt);
-  $("expeditionLead").textContent=gear?"調査中："+gear.name+"（敵を"+requiredKills(plan.hunt)+"体倒すと発見）":plan.development||"今回は装備の調査なし";
+  $("expeditionLead").textContent=gear?"噂の特別ドロップ："+gear.name+"（"+requiredKills(plan.hunt)+"体撃破で確定）":"敵を倒して装備ドロップを狙おう！";
   $("battleMsg").textContent=battle.message;spawnEnemy();show("battle");
 }
 $("departButton").addEventListener("click",startRun);
@@ -465,7 +536,7 @@ function spawnEnemy(){
   var names={slime:"草原スライム",goblin:"街道ゴブリン",wolf:"森の魔狼",boss:"古い道の番人"};
   var max=Math.round(9+n*4.2+(kind==="boss"?16:0));
   battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:1+Math.floor(n*.8)+(kind==="boss"?3:0),x:960,timer:1.3,hit:0};
-  battle.princeTimer=.4;battle.maidTimer=.8;
+  state.party.forEach(function(id){battle.timers[id]=attackInterval(id)*.5;});
   $("battleTitle").textContent="第"+n+"戦";
   $("enemyName").textContent=battle.enemy.name;
   $("enemyHp").textContent="HP "+max+"/"+max;
@@ -473,19 +544,21 @@ function spawnEnemy(){
   $("encounterLabel").textContent="第"+n+"戦";
 }
 function say(message){battle.message=message;$("battleMsg").textContent=message;}
-function strike(who){
-  var enemy=battle.enemy;if(!enemy||enemy.hp<=0)return;
-  var dmg=totalAttack(who===state.prince?"prince":"maid");enemy.hp=Math.max(0,enemy.hp-dmg);enemy.hit=.2;battle.flash=.12;
+function strike(id){
+  var enemy=battle.enemy;if(!enemy||enemy.hp<=0||state[id].hp<=0)return;
+  var dmg=totalAttack(id),mode=gearMode(id);
+  enemy.hp=Math.max(0,enemy.hp-dmg);enemy.hit=.2;battle.flash=.12;
+  if(mode==="ranged")battle.shots.push({x:battle.positions[id]||150,y:214,to:enemy.x-12,ttl:.32});
   $("enemyHp").textContent="HP "+enemy.hp+"/"+enemy.max;
   $("enemyBar").style.width=100*enemy.hp/enemy.max+"%";
   if(enemy.hp<=0){
     battle.kills++;battle.nextTimer=.65;
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
-    if(battle.kills>state.best){state.best=battle.kills;}
+    if(battle.kills>state.best)state.best=battle.kills;
+    var loot=makeLoot(enemy);
+    if(loot)say(enemy.name+"が「"+item(loot).name+"」をドロップ！");
     if(battle.kills===10&&!daughter().rescued){
-      battle.rescueText=rescueDaughter();
-      battle.rescuePause=2.8;
-      battle.nextTimer=2.8;
+      battle.rescueText=rescueDaughter();battle.rescuePause=2.8;battle.nextTimer=2.8;
       $("battleHeroineEvent").hidden=false;
       $("battleHeroineEvent").textContent=battle.rescueText;
       say("10体目突破！ 村長の娘を救出した！");
@@ -493,47 +566,64 @@ function strike(who){
     if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
     if(battle.hunt&&!battle.found&&battle.kills>=requiredKills(battle.hunt)){
       battle.found=battle.hunt;
-      say("発見！　"+item(battle.found).name+"を持ち帰れそうです！");
-      $("expeditionLead").textContent="発見済み："+item(battle.found).name+"（帰還後に装備）";
+      say("特別ドロップ！　"+item(battle.found).name+"を確保しました！");
+      $("expeditionLead").textContent="特別ドロップ済み："+item(battle.found).name;
     }
     if(battle.kills%4===0&&Math.random()<.45){
-      state.prince.hp=Math.min(state.prince.max,state.prince.hp+5);
-      state.maid.hp=Math.min(state.maid.max,state.maid.hp+5);
-      say("道ばたで薬草を発見！　二人のHPが5回復。");
+      state.party.forEach(function(actor){state[actor].hp=Math.min(state[actor].max,state[actor].hp+5);});
+      say("道ばたで薬草を発見！　遠征メンバーのHPが5回復。");
     }
     refreshStats();
   }
 }
 function update(dt){
   if(state.phase!=="battle")return;
-  battle.scroll+=dt*105;
-  battle.flash=Math.max(0,battle.flash-dt);
+  battle.scroll+=dt*105;battle.flash=Math.max(0,battle.flash-dt);
   battle.rescuePause=Math.max(0,(battle.rescuePause||0)-dt);
+  battle.shots=battle.shots.filter(function(shot){shot.ttl-=dt;return shot.ttl>0;});
   if(battle.nextTimer>0){battle.nextTimer-=dt;if(battle.nextTimer<=0)spawnEnemy();return;}
   var e=battle.enemy;if(!e)return;
   e.hit=Math.max(0,e.hit-dt);
   if(e.x>356){e.x=Math.max(356,e.x-dt*470);return;}
-  battle.princeTimer-=dt;battle.maidTimer-=dt;e.timer-=dt;
-  if(state.prince.hp>0&&battle.princeTimer<=0){battle.princeTimer+=.88;strike(state.prince);}
+  // 全員独立したクールタイム。近接は射程まで前進、遠距離は後方から攻撃。
+  var melee=state.party.filter(function(id){return gearMode(id)==="melee";});
+  state.party.forEach(function(id){
+    if(state[id].hp<=0)return;
+    var mode=gearMode(id),target=310-Math.max(0,melee.indexOf(id))*24;
+    if(mode==="melee")battle.positions[id]=Math.min(target,(battle.positions[id]||200)+dt*165);
+    var inRange=mode==="ranged"||battle.positions[id]>=target-1;
+    if(inRange){
+      battle.timers[id]-=dt;
+      if(battle.timers[id]<=0){
+        battle.timers[id]+=attackInterval(id);
+        if(e.hp>0)strike(id);
+      }
+    }
+  });
   if(e.hp<=0)return;
-  if(state.maid.hp>0&&battle.maidTimer<=0){battle.maidTimer+=1.12;strike(state.maid);}
-  if(e.hp<=0)return;
+  e.timer-=dt;
   if(e.timer<=0){
     e.timer+=1.55;
-    var target=state.prince.hp>0?state.prince:state.maid;
-    target.hp=Math.max(0,target.hp-e.atk);
-    say(e.name+"の攻撃！ "+e.atk+" ダメージ。");
+    var front=state.party.filter(function(id){return state[id].hp>0&&gearMode(id)==="melee";});
+    var targets=front.length?front:state.party.filter(function(id){return state[id].hp>0;});
+    if(!targets.length){endRun();return;}
+    var victim=targets[battle.enemyAttacks++%targets.length];
+    state[victim].hp=Math.max(0,state[victim].hp-e.atk);
+    say(e.name+"の攻撃！ "+combatName(victim)+"に"+e.atk+" ダメージ。");
     refreshStats();
-    if(state.prince.hp<=0&&state.maid.hp<=0)endRun();
+    if(state.party.every(function(id){return state[id].hp<=0;}))endRun();
   }
 }
 function endRun(){
   var earned=battle.kills;
-  if(battle.found&&state.items.indexOf(battle.found)<0)state.items.push(battle.found);
-  $("lootReport").textContent=battle.found?
-    "発見！ "+item(battle.found).name+"を持ち帰りました。町に戻って王子かメイドに装備させよう！":
-    battle.hunt?"調査した場所には届きませんでした。次回また噂を選んで挑戦できます。":
-    "今回は新しい装備の調査をしていません。メイドの噂から探しに行けます。";
+  var rewards=[];
+  if(battle.found&&state.items.indexOf(battle.found)<0){
+    state.items.push(battle.found);rewards.push(item(battle.found).name+"（噂）");
+  }
+  battle.drops.forEach(function(id){state.items.push(id);rewards.push(item(id).name);});
+  $("lootReport").textContent=rewards.length?
+    (battle.found?item(battle.found).name+"を持ち帰りました。 ":"")+"今回の戦利品 "+rewards.length+"個："+rewards.slice(0,12).join("、")+(rewards.length>12?" ほか"+(rewards.length-12)+"個":"")+"。帰還後に装備できます。":
+    "今回は装備のドロップなし。次の遠征でまた挑戦！";
   $("heroineResult").hidden=!battle.rescueText;
   $("heroineResult").textContent=battle.rescueText||"";
   $("resultKills").textContent=String(earned);
@@ -549,8 +639,8 @@ function endRun(){
 }
 $("backButton").addEventListener("click",function(){
   if(state.phase!=="result")return;
-  state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  renderChoices();renderEquipment();renderFinds();renderRelationships();show("town");
+  state.party.forEach(function(id){state[id].hp=state[id].max;});
+  renderChoices();renderEquipment();renderFinds();renderParty();renderRelationships();show("town");
 });
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function poly(points,color){
@@ -568,7 +658,7 @@ function spritePrince(x,y,t){
   rect(2,-51,3,3,"#25333d");
   rect(-13,-13,10,13,"#272b44");rect(2,-13,10,13,"#272b44");
   rect(10,-39,8,8,"#e5c6a0");
-  if(state.phase==="battle"&&battle.enemy&&battle.enemy.x<=356&&battle.enemy.hp>0){
+  if(state.phase==="battle"&&battle.enemy&&battle.enemy.x<=356&&battle.enemy.hp>0&&gearMode("prince")==="melee"){
     rect(16,-68,4,40,"#d6e5e4");rect(12,-28,12,4,"#d3ac61");
   }else{rect(19,-45,4,36,"#d6e5e4");rect(15,-10,12,4,"#d3ac61");}
   if(state.prince.hp<=0&&state.phase==="battle")rect(-30,-5,50,6,"#a24d4c");
@@ -585,6 +675,14 @@ function spriteMaid(x,y,t){
   rect(10,-40,7,17,"#e5ba99");rect(22,-59,4,54,"#9c7847");
   poly([[17,-7],[34,-7],[27,2]],"#dbc57d");
   if(state.maid.hp<=0&&state.phase==="battle")rect(-28,-5,55,6,"#a24d4c");
+  ctx.restore();
+}
+function spriteApprentice(x,y,t){
+  ctx.save();ctx.translate(Math.round(x),Math.round(y+Math.sin(t*5+.6)*2));
+  rect(-13,-41,26,33,"#7c836b");rect(-12,-55,24,18,"#ecc59b");
+  rect(-16,-60,30,7,"#594b3c");rect(-10,-9,9,12,"#46505a");rect(5,-9,9,12,"#46505a");
+  rect(17,-38,5,29,"#a6a9aa");rect(13,-11,13,5,"#665749");
+  if(state.apprentice.hp<=0&&state.phase==="battle")rect(-25,-5,48,6,"#a24d4c");
   ctx.restore();
 }
 function spriteDaughter(x,y,t){
@@ -641,8 +739,22 @@ function drawScene(t){
     rect(665,212,108,66,"#a28a65");poly([[647,212],[720,156],[790,212]],"#4a5d60");
     rect(709,240,25,38,"#604d42");rect(681,231,16,15,"#d9bd86");
   }
-  spriteMaid(160,277,t);spritePrince(254,277,t);
-  if(active) spriteEnemy(battle.enemy,t);
+  if(!active){
+    spriteMaid(160,277,t);spritePrince(254,277,t);
+    if(state.people.indexOf("apprentice")>=0)spriteApprentice(212,277,t);
+  }else{
+    state.party.forEach(function(id){
+      var x=battle.positions[id]||({prince:254,maid:160,apprentice:205}[id]);
+      if(id==="prince")spritePrince(x,277,t);
+      if(id==="maid")spriteMaid(x,277,t);
+      if(id==="apprentice")spriteApprentice(x,277,t);
+    });
+    spriteEnemy(battle.enemy,t);
+    battle.shots.forEach(function(shot){
+      ctx.save();ctx.strokeStyle="#ffe39e";ctx.lineWidth=4;ctx.beginPath();
+      ctx.moveTo(shot.x+22,shot.y);ctx.lineTo(shot.to,shot.y-8);ctx.stroke();ctx.restore();
+    });
+  }
   if(active&&battle.rescuePause>0)spriteDaughter(550,277,t);
   if(active&&battle.flash>0){ctx.fillStyle="rgba(255,241,190,.16)";ctx.fillRect(0,0,w,h);}
   rect(0,346,w,14,"#3d5b4f");
@@ -653,7 +765,7 @@ function loop(now){
   update(dt*1.45);drawScene(clock);
   requestAnimationFrame(loop);
 }
-meetDaughter();renderChoices();renderEquipment();renderFinds();renderRelationships();show("town");requestAnimationFrame(loop);
+meetDaughter();renderChoices();renderEquipment();renderFinds();renderParty();renderRelationships();show("town");requestAnimationFrame(loop);
 })();
 </script>
 </body>
