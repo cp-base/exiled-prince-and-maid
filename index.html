@@ -88,6 +88,13 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 .relation-scene{margin-top:13px;border:1px solid #657471;border-radius:10px;padding:12px;background:#2d3b3b;line-height:1.8;font-size:14px}
 .relation-log{padding-left:20px;color:var(--sub);font-size:12px;line-height:1.8}
 .relation-tag{color:var(--gold);font-size:12px}
+.relationship-others{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.relation-card{border:1px solid #53635f;border-radius:11px;background:#253339;padding:13px;min-width:0}
+.relation-card .relation-scene{margin-top:10px}
+.relation-card .relation-log{margin-bottom:3px}
+.relation-card .relation-face{width:44px;height:44px;font-size:23px}
+.hunt-status{border:1px solid #668072;border-radius:8px;background:#203b36;padding:9px 11px;color:#d4edda;font-size:13px;line-height:1.6;margin-top:9px}
+@media(max-width:640px){.relationship-others{grid-template-columns:1fr}}
 .find-entry b{font-size:14px}.find-entry small{display:block;color:var(--sub);margin-top:4px;line-height:1.6}
 .ally-note{color:var(--sub);font-size:12px;margin-top:6px}
 #partyPanel .item-row{margin:8px 0}
@@ -113,7 +120,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.8 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.9 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -145,7 +152,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <p class="note">内政をひとつ選んだ後、結果と装備を確認して出撃します。戦闘中のコマンド操作はありません。</p>
   </section>
   <section id="relationshipPanel" class="card">
-    <div class="motto">灰渡の人々</div><h2>村長の娘</h2>
+    <div class="motto">灰渡の人々</div><h2>重要人物との関係</h2>
     <div class="relation-row">
       <div class="relation-face" aria-hidden="true">👩</div>
       <div class="relation-body">
@@ -158,6 +165,31 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <p class="relation-tag">これまでの出来事</p>
     <ul id="relationHistory" class="relation-log"></ul>
     <p id="relationTip" class="note">最初の交流のあと、遠征10体目で救出イベントが発生します。</p>
+    <div class="relationship-others">
+      <div class="relation-card">
+        <div class="relation-row"><div class="relation-face" aria-hidden="true">👴</div>
+          <div class="relation-body">
+            <div class="relation-head"><b>村長</b><span id="mayorStatus" class="relation-tag">様子見</span></div>
+            <div id="mayorHearts" class="relation-hearts" aria-label="村長の信頼">♡ ♡ ♡ ♡ ♡</div>
+            <div class="note">信頼 <b id="mayorValue">0 / 5</b></div>
+          </div>
+        </div>
+        <div id="mayorScene" class="relation-scene"></div>
+        <ul id="mayorHistory" class="relation-log"></ul>
+      </div>
+      <div class="relation-card">
+        <div class="relation-row"><div class="relation-face" aria-hidden="true">🏹</div>
+          <div class="relation-body">
+            <div class="relation-head"><b>狩人トーマ</b><span id="tomaStatus" class="relation-tag">まだ会っていない</span></div>
+            <div id="tomaHearts" class="relation-hearts" aria-label="トーマの友好度">♡ ♡ ♡ ♡ ♡</div>
+            <div class="note">友好度 <b id="tomaValue">0 / 5</b></div>
+          </div>
+        </div>
+        <div id="tomaScene" class="relation-scene"></div>
+        <div id="tomaHuntStatus" class="hunt-status">討伐：まだ手がかりなし</div>
+        <ul id="tomaHistory" class="relation-log"></ul>
+      </div>
+    </div>
   </section>
   <section id="developmentPanel" class="card">
     <div class="motto">灰渡の町を育てる</div>
@@ -205,6 +237,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
     <div id="dropTicker" class="drop-ticker" hidden aria-live="polite"></div>
     <div id="battleHeroineEvent" class="loot-report" hidden aria-live="polite"></div>
+    <div id="tomaBattleEvent" class="loot-report" hidden aria-live="polite"></div>
     <p class="note">敵からお金と共通素材、低確率で装備を獲得。速度は上のボタンで切り替え可能。参加者全員が倒れたら帰還します。</p>
   </section>
   <section id="resultPanel" class="card" hidden>
@@ -213,6 +246,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div id="lootReport" class="loot-report"></div>
     <div id="heroineResult" class="loot-report" hidden></div>
     <div id="postBattleHeroine" class="loot-report" hidden></div>
+    <div id="villageEventsResult" class="loot-report" hidden></div>
     <div id="developmentReport" class="loot-report" hidden></div>
     <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>今回の町育成</small><b id="resultTown">—</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
@@ -228,7 +262,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <button id="rescueContinue" class="primary" type="button">冒険を続ける</button>
   </div>
 </div>
-<footer>v0.8：噂は情報収集に変更。装備ドロップを減らし、お金・共通素材・行商人・4倍速を追加。数値は仮設定。再読み込みで初期化されます。</footer>
+<footer>v0.9：村長と狩人トーマの友好度・討伐イベントを追加した試作。数値は仮設定。再読み込みで初期化されます。</footer>
 </div>
 <script>
 (function(){
