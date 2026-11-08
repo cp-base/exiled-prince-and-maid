@@ -93,12 +93,19 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 #partyPanel .item-row{margin:8px 0}
 .combat-flag{font-size:12px;color:var(--mint)}
 .drop-ticker{margin:10px 0 0;padding:9px 12px;border:1px solid #816d44;border-radius:8px;background:#352e22;color:#f6d99d;font-size:13px;line-height:1.6}
+.rescue-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(9,17,22,.86);padding:18px}
+.rescue-dialog{width:min(100%,490px);max-height:90vh;overflow:auto;border:2px solid #deb983;border-radius:18px;background:#28373a;box-shadow:0 25px 65px #0009;padding:22px}
+.rescue-portrait{display:grid;place-items:center;margin:0 auto 12px;width:80px;height:80px;background:#5c5049;border:2px solid #e7c493;border-radius:20px;font-size:44px}
+.rescue-dialog h2{color:#ffdea3;text-align:center}
+.rescue-dialog p{font-size:15px;line-height:1.9}
+.rescue-dialog button{width:100%;margin-top:10px;min-height:50px}
+.ally-banner{color:#f4d2a9;font-weight:700}
 .loot-rare{color:#f0cf82}.loot-uncommon{color:#85d8be}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.6 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.7 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -113,6 +120,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
   <section class="team" aria-label="二人の状態">
     <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div><div id="princeGear" class="gear-caption">装備：なし</div></div>
     <div class="character"><div class="character-head"><b>🧹 メイド</b><small id="maidText">HP 24/24　攻撃 3</small></div><div class="bar"><i id="maidBar"></i></div><div id="maidGear" class="gear-caption">装備：なし</div></div>
+    <div class="character" id="daughterCard" hidden><div class="character-head"><b>💗 村長の娘</b><small id="daughterText">HP 20/20　攻撃 3</small></div><div class="bar"><i id="daughterBar"></i></div><div id="daughterGear" class="gear-caption">装備：なし</div><div id="daughterStatus" class="ally-note">灰渡限定の仲間</div></div>
     <div class="character" id="apprenticeCard" hidden><div class="character-head"><b>🛠 鍛冶見習い</b><small id="apprenticeText">HP 22/22　攻撃 2</small></div><div class="bar"><i id="apprenticeBar"></i></div><div id="apprenticeGear" class="gear-caption">装備：なし</div><div id="apprenticeStatus" class="ally-note">遠征に参加</div></div>
   </section>
   <section id="townPanel" class="card">
@@ -131,13 +139,13 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
       <div class="relation-body">
         <div class="relation-head"><b>村長の娘</b><span class="relation-tag" id="relationStatus">顔見知り</span></div>
         <div class="relation-hearts" id="relationHearts" aria-label="親密度">♡ ♡ ♡ ♡ ♡</div>
-        <div class="note">親密度 <b id="relationValue">0 / 5</b>　・遠征仲間ではない重要人物</div>
+        <div class="note">親密度 <b id="relationValue">0 / 5</b>　・<span id="relationMembership">町の重要人物</span></div>
       </div>
     </div>
     <div id="relationScene" class="relation-scene" aria-live="polite"></div>
     <p class="relation-tag">これまでの出来事</p>
     <ul id="relationHistory" class="relation-log"></ul>
-    <p class="note">親密度と出来事を記録。後の周回での使い方はまだ未定です。</p>
+    <p id="relationTip" class="note">最初の交流のあと、遠征10体目で救出イベントが発生します。</p>
   </section>
   <section id="developmentPanel" class="card">
     <div class="motto">灰渡の町を育てる</div>
@@ -159,7 +167,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
   <section id="partyPanel" class="card">
     <div class="motto">遠征メンバー</div><h2>仲間の編成</h2>
     <div id="partyRoster"></div>
-    <p class="note">王子とメイドは固定。町で出会った仲間は遠征に参加・待機を切り替えられます（この試作では最大3人）。</p>
+    <p class="note">王子とメイドは固定。灰渡で救出した娘も、この町だけの遠征仲間として編成できます（最大3人）。</p>
   </section>
   <section id="equipmentPanel" class="card">
     <div class="motto">帰還後に整える</div>
@@ -185,21 +193,32 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="resultSpeech"></p></div>
     <div id="lootReport" class="loot-report"></div>
     <div id="heroineResult" class="loot-report" hidden></div>
+    <div id="postBattleHeroine" class="loot-report" hidden></div>
     <div id="developmentReport" class="loot-report" hidden></div>
     <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>今回の町育成</small><b id="resultTown">—</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
   </section>
 </main>
-<footer>v0.6：敵からの装備ドロップ、仲間編成、近接・遠距離の独立攻撃を試す仮実装です。v0.5の交流イベントは維持。ドロップ率・装備能力は仮設定。再読み込みで初期化されます。</footer>
+<div id="rescueModal" class="rescue-modal" role="dialog" aria-modal="true" aria-labelledby="rescueTitle" aria-describedby="rescueStory" hidden>
+  <div class="rescue-dialog">
+    <div class="motto">遠征イベント / 10体目</div>
+    <div class="rescue-portrait" aria-hidden="true">👩</div>
+    <h2 id="rescueTitle">村長の娘を救出！</h2>
+    <p id="rescueStory"></p>
+    <p class="ally-banner">💗 村長の娘が灰渡限定の仲間になった！</p>
+    <button id="rescueContinue" class="primary" type="button">冒険を続ける</button>
+  </div>
+</div>
+<footer>v0.7：救出ポップアップ、村長の娘の灰渡限定加入、帰還後交流、提案のランダム抽選を試す仮実装です。ドロップ率・装備能力は仮設定。再読み込みで初期化されます。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22}};
+var state={phase:"town",currentTown:"haiwatari",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,firstExchange:false,joined:false,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null,daughter:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22},daughter:{atk:3,max:20,hp:20}};
 var planning=null;
-var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0};
+var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0,rescueWaiting:false};
 var frameAt=0,clock=0;
 // ここから下の発見条件・装備数値は試作用の仮データ。
 var itemData={
@@ -216,8 +235,9 @@ var lootTypes=[
 ];
 function item(id){return id?itemData[id]:null;}
 function hasFind(id){return state.finds.indexOf(id)>=0;}
-function combatName(id){return {prince:"王子",maid:"メイド",apprentice:"鍛冶見習い"}[id]||id;}
-function gearMode(id){var gear=item(state.equipment[id]);return gear?gear.mode:(id==="maid"?"ranged":"melee");}
+function combatName(id){return {prince:"王子",maid:"メイド",apprentice:"鍛冶見習い",daughter:"村長の娘"}[id]||id;}
+function townAllies(){return state.people.concat(state.currentTown==="haiwatari"&&daughter().joined?["daughter"]:[]);}
+function gearMode(id){var gear=item(state.equipment[id]);return gear?gear.mode:((id==="maid"||id==="daughter")?"ranged":"melee");}
 function equipmentBonus(gear){return gear?gear.bonus+state.town.forge+(hasFind("craft_notes")?1:0):0;}
 function totalAttack(actor){return state[actor].atk+equipmentBonus(item(state.equipment[actor]));}
 function requiredKills(id){var gear=item(id);return gear?Math.max(1,gear.at-(hasFind("road_map")?1:0)):0;}
@@ -331,20 +351,23 @@ var chanceMeetings=[
  {id:"road",before:"街道を見つめる村長の娘。『あの先には何があるんでしょうね』",after:"街道で村長の娘と再会。『あの道を見ると、王子さまたちを思い出します』"},
  {id:"gift",before:"村長の娘がメイドに干し果実をくれた。『お二人でどうぞ』",after:"村長の娘が小さな包みを差し出した。『旅のお守り代わりです』"}
 ];
-function randomRelationshipEvent(){
-  var d=daughter(),events=chanceMeetings.filter(function(e){return d.flags.indexOf("chance_"+e.id)<0;});
-  if(!d.met||!events.length||Math.random()>=.28)return null;
-  var e=events[Math.floor(Math.random()*events.length)];
-  return relationshipEvent("chance_"+e.id,1,d.rescued?e.after:e.before,true);
+function postBattleRelationshipEvent(){
+  var d=daughter();
+  if(!d.rescued||!d.joined||Math.random()>=.38)return null;
+  if(d.flags.indexOf("thanks")<0)return visitDaughter();
+  var pool=chanceMeetings.filter(function(e){return d.flags.indexOf("chance_"+e.id)<0;});
+  if(!pool.length)return visitDaughter();
+  var e=pool[Math.floor(Math.random()*pool.length)];
+  return relationshipEvent("chance_"+e.id,1,e.after,true);
 }
 function rescueDaughter(){
   var d=daughter();if(d.rescued)return null;
   var close=d.affinity>=3;
-  d.rescued=true;
+  d.rescued=true;d.joined=true;
   var text="【街道で救出】10体目の古い道の番人を倒した先で、魔物に追われる村長の娘を発見！ 王子とメイドが助け出した。"+(close?
     "『……王子さまなら来てくださると思っていました』":
     "『助けてくださって、本当にありがとうございます！』");
-  return relationshipEvent("rescue",2,text,true);
+  return relationshipEvent("rescue",2,text+"　娘は灰渡にいる間、遠征に協力してくれることになった。",true);
 }
 function renderRelationships(){
   var d=daughter(),status=d.rescued&&d.affinity>=4?"特別な存在":d.affinity>=3?"親しい":d.affinity>=2?"少し打ち解けた":"顔見知り";
@@ -352,6 +375,11 @@ function renderRelationships(){
   $("relationValue").textContent=d.affinity+" / 5";
   $("relationHearts").textContent="♥ ".repeat(d.affinity)+"♡ ".repeat(5-d.affinity);
   $("relationScene").textContent=d.scene;
+  $("relationMembership").textContent=d.joined?"💗 灰渡限定の仲間":d.firstExchange?"10体目で救出可能":"町の重要人物";
+  $("relationTip").textContent=d.joined?
+    "灰渡限定の仲間として編成できます。これからの交流は帰還後にランダムで発生します。":
+    d.firstExchange?"最初の交流を終えました。遠征10体目の救出へ！":
+    "メイドの提案で一度お話しすると、遠征10体目に救出イベントが発生します。";
   var log=$("relationHistory");log.textContent="";
   d.history.slice(-4).reverse().forEach(function(x){
     var li=document.createElement("li");li.textContent=x.text;log.appendChild(li);
@@ -372,13 +400,27 @@ function getProposals(){
     title:"町の人に話を聞いてみましょう！",effect:"技術品・人材を探す（結果はランダム）",topic:"search",
     apply:function(){return {development:"町で聞き込みを行いました。"};}
   });
-  if(daughter().met)proposals.push({
-    title:daughter().rescued&&daughter().flags.indexOf("thanks")<0?"村長の娘さんから、お礼のお誘いです！":"村長の娘さんに会いに行きましょう！",
-    effect:daughter().rescued&&daughter().flags.indexOf("thanks")<0?"救出後の交流":"交流イベント・親密度 +1（上限5）",
-    apply:function(){return {relationship:visitDaughter()};}
+  if(daughter().met&&!daughter().firstExchange)proposals.push({
+    heroineFirst:true,title:"村長の娘さんと初めてお話ししましょう！",
+    effect:"最初の交流 / 遠征10体目の救出イベント解放",
+    apply:function(){daughter().firstExchange=true;return {relationship:visitDaughter()};}
   });
   proposals.push({title:"遠征の準備だけしましょう！",effect:"内政は行わず、装備を整えて出撃",apply:function(){return {};}});
   return proposals;
+}
+// 毎回、条件に合う提案を最大3件抽選。最初の交流だけは必ず候補にする。
+function rollProposals(){
+  var pool=getProposals(),chosen=[];
+  var first=pool.find(function(p){return p.heroineFirst;});
+  if(first){chosen.push(first);pool=pool.filter(function(p){return p!==first;});}
+  for(var i=pool.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1)),tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;
+  }
+  chosen=chosen.concat(pool.slice(0,Math.max(0,3-chosen.length)));
+  for(var k=chosen.length-1;k>0;k--){
+    var n=Math.floor(Math.random()*(k+1)),swap=chosen[k];chosen[k]=chosen[n];chosen[n]=swap;
+  }
+  return chosen;
 }
 function renderEquipment(){
   var box=$("inventory");box.textContent="";
@@ -393,7 +435,7 @@ function renderEquipment(){
     label.textContent=gear.name+"（"+(gear.mode==="ranged"?"遠距離":"近接")+"・攻撃補正 +"+equipmentBonus(gear)+"）";
     var info=document.createElement("small");info.textContent=gear.detail;label.appendChild(info);
     var actions=document.createElement("div");actions.className="item-actions";
-    ["prince","maid"].concat(state.people).forEach(function(who){
+    ["prince","maid"].concat(townAllies()).forEach(function(who){
       var equipped=state.equipment[who]===id;
       var button=document.createElement("button");button.type="button";
       button.className="item-button"+(equipped?" active":"");
@@ -416,15 +458,16 @@ function renderEquipment(){
 }
 function renderParty(){
   var box=$("partyRoster");box.textContent="";
-  if(!state.people.length){
+  var allies=townAllies();
+  if(!allies.length){
     var p=document.createElement("p");p.className="note";
-    p.textContent="まだ仲間は加入していません。町で人材を発見すると迎え入れられます。";
+    p.textContent="まだ仲間はいません。町で人材を発見するか、村長の娘を救出しよう。";
     box.appendChild(p);return;
   }
-  state.people.forEach(function(id){
+  allies.forEach(function(id){
     var row=document.createElement("div");row.className="item-row";
     var label=document.createElement("div");label.className="item-name";
-    label.textContent=townFindData[id].name;
+    label.textContent=id==="daughter"?"村長の娘（灰渡限定）":townFindData[id].name;
     var note=document.createElement("small");
     note.textContent="攻撃 "+totalAttack(id)+" / "+(gearMode(id)==="ranged"?"遠距離":"近接")+" / "+(state.party.indexOf(id)>=0?"出撃メンバー":"町で待機");
     label.appendChild(note);
@@ -468,6 +511,13 @@ function refreshStats(){
   $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし");
   $("maidGear").textContent="装備："+(item(state.equipment.maid)?item(state.equipment.maid).name:"なし")+"（"+(gearMode("maid")==="ranged"?"遠距離":"近接")+"）";
   $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし")+"（"+(gearMode("prince")==="ranged"?"遠距離":"近接")+"）";
+  $("daughterCard").hidden=!daughter().joined||state.currentTown!=="haiwatari";
+  if(daughter().joined&&state.currentTown==="haiwatari"){
+    $("daughterText").textContent="HP "+Math.ceil(state.daughter.hp)+"/"+state.daughter.max+"　攻撃 "+totalAttack("daughter");
+    $("daughterBar").style.width=100*state.daughter.hp/state.daughter.max+"%";
+    $("daughterGear").textContent="装備："+(item(state.equipment.daughter)?item(state.equipment.daughter).name:"なし")+"（"+(gearMode("daughter")==="ranged"?"遠距離":"近接")+"）";
+    $("daughterStatus").textContent=state.party.indexOf("daughter")>=0?"灰渡限定・遠征に参加":"灰渡限定・今回は待機";
+  }
   $("apprenticeCard").hidden=state.people.indexOf("apprentice")<0;
   if(state.people.indexOf("apprentice")>=0){
     $("apprenticeText").textContent="HP "+Math.ceil(state.apprentice.hp)+"/"+state.apprentice.max+"　攻撃 "+totalAttack("apprentice");
@@ -499,9 +549,8 @@ function renderChoices(){
   var box=$("choices");box.textContent="";
   $("proposalReport").hidden=!planning;$("departButton").hidden=!planning;box.hidden=!!planning;
   if(planning){$("maidSpeech").textContent="「王子さま、準備の結果が出ました！ 装備を確認してから出発しましょう！」";return;}
-  var rumor=nextRumor();
-  $("maidSpeech").textContent=rumor?rumor.speech:"「王子さま、町の様子を見て、次の遠征を考えましょう！」";
-  getProposals().forEach(function(p){
+  $("maidSpeech").textContent="「王子さま、今日はこんな提案を持ってきました！ どれにしましょう？」";
+  rollProposals().forEach(function(p){
     var btn=document.createElement("button");btn.type="button";btn.className="choice";
     var title=document.createElement("b"),eff=document.createElement("span");
     title.textContent=p.title;eff.textContent=p.effect;btn.appendChild(title);btn.appendChild(eff);
@@ -510,7 +559,7 @@ function renderChoices(){
 }
 function selectProposal(p){
   if(state.phase!=="town"||planning)return;
-  var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null,relationship=outcome.relationship||randomRelationshipEvent();
+  var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null,relationship=outcome.relationship||null;
   planning={title:p.title,hunt:outcome.hunt||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship};
   var summary="【"+p.title+"】\n"+(planning.development||(planning.hunt?"噂の調査を遠征で行います。":"今回は内政を行いません。"));
   if(p.topic)summary+="\n"+(event||"今回は特別な発見はありませんでした。");
@@ -522,9 +571,10 @@ function startRun(){
   if(state.phase!=="town"||!planning)return;
   var plan=planning;planning=null;state.runs++;
   state.party.forEach(function(id){state[id].hp=state[id].max;});
-  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0};
+  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205,daughter:132},drops:[],shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0,rescueWaiting:false};
   state.party.forEach(function(id){battle.timers[id]=id==="prince"?.4:id==="maid"?.8:.6;});
   $("battleHeroineEvent").hidden=true;
+  $("rescueModal").hidden=true;
   $("dropTicker").hidden=true;$("dropTicker").textContent="";
   var gear=item(plan.hunt);
   $("expeditionLead").textContent=gear?"噂の特別ドロップ："+gear.name+"（"+requiredKills(plan.hunt)+"体撃破で確定）":"敵を倒して装備ドロップを狙おう！";
@@ -557,10 +607,15 @@ function strike(id){
     if(battle.kills>state.best)state.best=battle.kills;
     var loot=makeLoot(enemy);
     if(loot)say(enemy.name+"が「"+item(loot).name+"」をドロップ！");
-    if(battle.kills===10&&!daughter().rescued){
-      battle.rescueText=rescueDaughter();battle.rescuePause=2.8;battle.nextTimer=2.8;
+    if(battle.kills===10&&daughter().firstExchange&&!daughter().rescued){
+      battle.rescueText=rescueDaughter();
+      battle.rescueWaiting=true;
+      battle.rescuePause=2.8;battle.nextTimer=1;
+      $("rescueStory").textContent=battle.rescueText;
+      $("rescueModal").hidden=false;
       $("battleHeroineEvent").hidden=false;
       $("battleHeroineEvent").textContent=battle.rescueText;
+      if($("rescueContinue").focus)$("rescueContinue").focus();
       say("10体目突破！ 村長の娘を救出した！");
     }
     if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
@@ -577,7 +632,7 @@ function strike(id){
   }
 }
 function update(dt){
-  if(state.phase!=="battle")return;
+  if(state.phase!=="battle"||battle.rescueWaiting)return;
   battle.scroll+=dt*105;battle.flash=Math.max(0,battle.flash-dt);
   battle.rescuePause=Math.max(0,(battle.rescuePause||0)-dt);
   battle.shots=battle.shots.filter(function(shot){shot.ttl-=dt;return shot.ttl>0;});
@@ -614,8 +669,17 @@ function update(dt){
     if(state.party.every(function(id){return state[id].hp<=0;}))endRun();
   }
 }
+$("rescueContinue").addEventListener("click",function(){
+  if(!battle.rescueWaiting)return;
+  battle.rescueWaiting=false;
+  $("rescueModal").hidden=true;
+});
 function endRun(){
   var earned=battle.kills;
+  if(daughter().joined&&state.currentTown==="haiwatari"&&state.party.indexOf("daughter")<0&&state.party.length<3){
+    state.party.push("daughter");
+  }
+  var postBattleText=battle.rescueText?null:postBattleRelationshipEvent();
   var rewards=[];
   if(battle.found&&state.items.indexOf(battle.found)<0){
     state.items.push(battle.found);rewards.push(item(battle.found).name+"（噂）");
@@ -626,6 +690,8 @@ function endRun(){
     "今回は装備のドロップなし。次の遠征でまた挑戦！";
   $("heroineResult").hidden=!battle.rescueText;
   $("heroineResult").textContent=battle.rescueText||"";
+  $("postBattleHeroine").hidden=!postBattleText;
+  $("postBattleHeroine").textContent=postBattleText?"💗 村長の娘との交流： "+postBattleText:"";
   $("resultKills").textContent=String(earned);
   $("resultTown").textContent=battle.topic==="road"||battle.topic==="forge"?"+1":battle.event?"発見":"—";
   $("developmentReport").hidden=!battle.development&&!battle.event;
@@ -691,6 +757,7 @@ function spriteDaughter(x,y,t){
   rect(-13,-60,26,24,"#edc6a6");rect(-16,-67,31,12,"#684b39");
   rect(-17,-59,8,35,"#684b39");rect(10,-60,9,34,"#684b39");
   rect(4,-51,4,4,"#323a3f");rect(-13,-10,9,11,"#725c53");rect(5,-10,9,11,"#725c53");
+  if(state.daughter.hp<=0&&state.phase==="battle")rect(-27,-5,55,6,"#a24d4c");
   ctx.restore();
 }
 function spriteEnemy(e,t){
@@ -742,12 +809,14 @@ function drawScene(t){
   if(!active){
     spriteMaid(160,277,t);spritePrince(254,277,t);
     if(state.people.indexOf("apprentice")>=0)spriteApprentice(212,277,t);
+    if(daughter().joined&&state.currentTown==="haiwatari")spriteDaughter(320,277,t);
   }else{
     state.party.forEach(function(id){
-      var x=battle.positions[id]||({prince:254,maid:160,apprentice:205}[id]);
+      var x=battle.positions[id]||({prince:254,maid:160,apprentice:205,daughter:132}[id]);
       if(id==="prince")spritePrince(x,277,t);
       if(id==="maid")spriteMaid(x,277,t);
       if(id==="apprentice")spriteApprentice(x,277,t);
+      if(id==="daughter")spriteDaughter(x,277,t);
     });
     spriteEnemy(battle.enemy,t);
     battle.shots.forEach(function(shot){
