@@ -387,7 +387,7 @@ function renderEquipment(){
     empty.textContent="まだ装備はありません。メイドの噂を選んで遠征してみよう。";
     box.appendChild(empty);return;
   }
-  state.items.forEach(function(id){
+  state.items.slice().sort(function(a,b){return (item(a).rarity==="固定"?-1:0)-(item(b).rarity==="固定"?-1:0);}).forEach(function(id){
     var gear=item(id),row=document.createElement("div");row.className="item-row";
     var label=document.createElement("div");label.className="item-name";
     label.textContent=gear.name+"（"+(gear.mode==="ranged"?"遠距離":"近接")+"・攻撃補正 +"+equipmentBonus(gear)+"）";
@@ -407,7 +407,7 @@ function renderEquipment(){
           });
           state.equipment[who]=id;
         }
-        refreshStats();renderEquipment();
+        refreshStats();renderEquipment();renderParty();
       });
       actions.appendChild(button);
     });
@@ -622,7 +622,7 @@ function endRun(){
   }
   battle.drops.forEach(function(id){state.items.push(id);rewards.push(item(id).name);});
   $("lootReport").textContent=rewards.length?
-    "今回の戦利品 "+rewards.length+"個："+rewards.slice(0,12).join("、")+(rewards.length>12?" ほか"+(rewards.length-12)+"個":"")+"。帰還後に装備できます。":
+    (battle.found?item(battle.found).name+"を持ち帰りました。 ":"")+"今回の戦利品 "+rewards.length+"個："+rewards.slice(0,12).join("、")+(rewards.length>12?" ほか"+(rewards.length-12)+"個":"")+"。帰還後に装備できます。":
     "今回は装備のドロップなし。次の遠征でまた挑戦！";
   $("heroineResult").hidden=!battle.rescueText;
   $("heroineResult").textContent=battle.rescueText||"";
