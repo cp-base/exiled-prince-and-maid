@@ -80,12 +80,20 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 .depart-actions{display:flex;justify-content:flex-end;margin-top:12px}
 .finds-list{display:grid;gap:8px}
 .find-entry{background:#17272b;border:1px solid #43595e;border-radius:9px;padding:10px 13px}
+.relation-row{display:flex;gap:14px;align-items:start}
+.relation-face{flex:none;background:#605448;border:2px solid #c5ac80;border-radius:12px;width:52px;height:52px;display:grid;place-items:center;font-size:27px}
+.relation-body{flex:1;min-width:0}
+.relation-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.relation-hearts{color:#f3b8c0;font-size:19px;letter-spacing:2px;margin:6px 0}
+.relation-scene{margin-top:13px;border:1px solid #657471;border-radius:10px;padding:12px;background:#2d3b3b;line-height:1.8;font-size:14px}
+.relation-log{padding-left:20px;color:var(--sub);font-size:12px;line-height:1.8}
+.relation-tag{color:var(--gold);font-size:12px}
 .find-entry b{font-size:14px}.find-entry small{display:block;color:var(--sub);margin-top:4px;line-height:1.6}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.4 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.5 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -109,6 +117,21 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div id="proposalReport" class="event-result" hidden aria-live="polite"></div>
     <div class="depart-actions"><button class="primary" id="departButton" type="button" hidden>装備を確認して出撃する</button></div>
     <p class="note">内政をひとつ選んだ後、結果と装備を確認して出撃します。戦闘中のコマンド操作はありません。</p>
+  </section>
+  <section id="relationshipPanel" class="card">
+    <div class="motto">灰渡の人々</div><h2>村長の娘</h2>
+    <div class="relation-row">
+      <div class="relation-face" aria-hidden="true">👩</div>
+      <div class="relation-body">
+        <div class="relation-head"><b>村長の娘</b><span class="relation-tag" id="relationStatus">顔見知り</span></div>
+        <div class="relation-hearts" id="relationHearts" aria-label="親密度">♡ ♡ ♡ ♡ ♡</div>
+        <div class="note">親密度 <b id="relationValue">0 / 5</b>　・遠征仲間ではない重要人物</div>
+      </div>
+    </div>
+    <div id="relationScene" class="relation-scene" aria-live="polite"></div>
+    <p class="relation-tag">これまでの出来事</p>
+    <ul id="relationHistory" class="relation-log"></ul>
+    <p class="note">親密度と出来事を記録。後の周回での使い方はまだ未定です。</p>
   </section>
   <section id="developmentPanel" class="card">
     <div class="motto">灰渡の町を育てる</div>
@@ -142,27 +165,29 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="battle-header"><div><div class="motto">自動遠征中</div><h2 id="battleTitle">街道を進んでいます…</h2></div><div class="enemy-meter"><div class="character-head"><b id="enemyName">敵</b><small id="enemyHp">HP --</small></div><div class="bar"><i id="enemyBar"></i></div></div></div>
     <div id="expeditionLead" class="lead"></div>
     <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
+    <div id="battleHeroineEvent" class="loot-report" hidden aria-live="polite"></div>
     <p class="note">敵を倒すたびに次の敵が強くなります。二人が倒れたら自動帰還します。</p>
   </section>
   <section id="resultPanel" class="card" hidden>
     <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
     <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="resultSpeech"></p></div>
     <div id="lootReport" class="loot-report"></div>
+    <div id="heroineResult" class="loot-report" hidden></div>
     <div id="developmentReport" class="loot-report" hidden></div>
     <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>今回の町育成</small><b id="resultTown">—</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
   </section>
 </main>
-<footer>v0.4：内政選択・偶然の発見・遠征準備の流れを試す仮実装です。町の能力値やイベント内容は仮設定。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
+<footer>v0.5：v0.4の内政・遠征に村長の娘との交流・救出を追加した仮実装です。町の能力値やイベント内容は仮設定。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
+var state={phase:"town",runs:0,best:0,town:{road:0,forge:0},goal:false,items:[],finds:[],people:[],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
 var planning=null;
-var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null};
+var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null,development:null,rescueText:null,rescuePause:0};
 var frameAt=0,clock=0;
 // ここから下の発見条件・装備数値は試作用の仮データ。
 var itemData={
@@ -233,6 +258,71 @@ function rollTownFind(topic){
   if(data.kind==="person")state.people.push(found);else state.finds.push(found);
   return "発見！ "+data.name+"（"+data.effect+"）";
 }
+// 親密度の値とイベント内容は仮置き。住人の自律行動は行わない。
+function daughter(){return state.relationships.daughter;}
+function relationshipEvent(id,points,text,once){
+  var d=daughter();
+  if(once&&d.flags.indexOf(id)>=0)return null;
+  if(once)d.flags.push(id);
+  d.affinity=Math.min(5,Math.max(0,d.affinity+points));
+  d.scene=text;d.history.push({id:id,text:text});
+  return text;
+}
+function meetDaughter(){
+  var d=daughter();if(d.met)return;d.met=true;
+  relationshipEvent("meeting",1,
+    "灰渡に来た日、村長の娘と顔を合わせた。『遠いところから大変でしたね。この町のことなら何でも聞いてください』",true);
+}
+function visitDaughter(){
+  var d=daughter();
+  if(d.rescued&&d.flags.indexOf("thanks")<0){
+    return relationshipEvent("thanks",1,
+      "村長の娘がお茶に招いてくれた。『あのときは、本当にありがとうございました。……また、お話ししてもいいですか？』",true);
+  }
+  d.visits++;
+  var before=[
+    "井戸のそばで村長の娘と話した。『王子さま、灰渡にはもう慣れましたか？』",
+    "村長の娘が昔の町の話を聞かせてくれた。『この町にも素敵な場所があるんです』",
+    "夕暮れの帰り道で立ち話。『遠征へ行くなら、どうかお気をつけて』"
+  ];
+  var after=[
+    "村長の娘が笑顔で迎えてくれた。『おかえりなさい。無事でよかった』",
+    "村長の娘と静かな道を歩く。『また旅に出ても、灰渡を覚えていてくださいね』",
+    "村長の娘と夕空を眺めた。『以前よりずっと、話しやすくなりましたね』"
+  ];
+  return relationshipEvent("visit_"+d.visits,1,(d.rescued?after:before)[(d.visits-1)%3],false);
+}
+var chanceMeetings=[
+ {id:"market",before:"市場で村長の娘とばったり。荷物を運ぶのを手伝い、お礼を言われた。",after:"買い物帰りの村長の娘と再会。『少し一緒に歩きませんか？』"},
+ {id:"road",before:"街道を見つめる村長の娘。『あの先には何があるんでしょうね』",after:"街道で村長の娘と再会。『あの道を見ると、王子さまたちを思い出します』"},
+ {id:"gift",before:"村長の娘がメイドに干し果実をくれた。『お二人でどうぞ』",after:"村長の娘が小さな包みを差し出した。『旅のお守り代わりです』"}
+];
+function randomRelationshipEvent(){
+  var d=daughter(),events=chanceMeetings.filter(function(e){return d.flags.indexOf("chance_"+e.id)<0;});
+  if(!d.met||!events.length||Math.random()>=.28)return null;
+  var e=events[Math.floor(Math.random()*events.length)];
+  return relationshipEvent("chance_"+e.id,1,d.rescued?e.after:e.before,true);
+}
+function rescueDaughter(){
+  var d=daughter();if(d.rescued)return null;
+  var close=d.affinity>=3;
+  d.rescued=true;
+  var text="【街道で救出】10体目の古い道の番人を倒した先で、魔物に追われる村長の娘を発見！ 王子とメイドが助け出した。"+(close?
+    "『……王子さまなら来てくださると思っていました』":
+    "『助けてくださって、本当にありがとうございます！』");
+  return relationshipEvent("rescue",2,text,true);
+}
+function renderRelationships(){
+  var d=daughter(),status=d.rescued&&d.affinity>=4?"特別な存在":d.affinity>=3?"親しい":d.affinity>=2?"少し打ち解けた":"顔見知り";
+  $("relationStatus").textContent=status;
+  $("relationValue").textContent=d.affinity+" / 5";
+  $("relationHearts").textContent="♥ ".repeat(d.affinity)+"♡ ".repeat(5-d.affinity);
+  $("relationScene").textContent=d.scene;
+  var log=$("relationHistory");log.textContent="";
+  d.history.slice(-4).reverse().forEach(function(x){
+    var li=document.createElement("li");li.textContent=x.text;log.appendChild(li);
+  });
+}
 function getProposals(){
   var rumor=nextRumor(),proposals=[];
   if(rumor)proposals.push({title:rumor.title,effect:"遠征で敵を"+requiredKills(rumor.id)+"体倒せば発見",apply:function(){return {hunt:rumor.id};}});
@@ -247,6 +337,11 @@ function getProposals(){
   if(availableTownFinds().length)proposals.push({
     title:"町の人に話を聞いてみましょう！",effect:"技術品・人材を探す（結果はランダム）",topic:"search",
     apply:function(){return {development:"町で聞き込みを行いました。"};}
+  });
+  if(daughter().met)proposals.push({
+    title:daughter().rescued&&daughter().flags.indexOf("thanks")<0?"村長の娘さんから、お礼のお誘いです！":"村長の娘さんに会いに行きましょう！",
+    effect:daughter().rescued&&daughter().flags.indexOf("thanks")<0?"救出後の交流":"交流イベント・親密度 +1（上限5）",
+    apply:function(){return {relationship:visitDaughter()};}
   });
   proposals.push({title:"遠征の準備だけしましょう！",effect:"内政は行わず、装備を整えて出撃",apply:function(){return {};}});
   return proposals;
@@ -324,6 +419,7 @@ function show(phase){
   $("equipmentPanel").hidden=phase!=="town";
   $("developmentPanel").hidden=phase!=="town";
   $("findsPanel").hidden=phase!=="town";
+  $("relationshipPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
   $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"王子とメイドの自動遠征中":"町へ帰還しました";
@@ -345,18 +441,20 @@ function renderChoices(){
 }
 function selectProposal(p){
   if(state.phase!=="town"||planning)return;
-  var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null;
-  planning={title:p.title,hunt:outcome.hunt||null,development:outcome.development||null,event:event,topic:p.topic||null};
+  var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null,relationship=outcome.relationship||randomRelationshipEvent();
+  planning={title:p.title,hunt:outcome.hunt||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship};
   var summary="【"+p.title+"】\n"+(planning.development||(planning.hunt?"噂の調査を遠征で行います。":"今回は内政を行いません。"));
   if(p.topic)summary+="\n"+(event||"今回は特別な発見はありませんでした。");
+  if(relationship)summary+="\n【村長の娘】"+relationship;
   $("proposalReport").textContent=summary;$("proposalReport").style.whiteSpace="pre-line";
-  renderChoices();renderEquipment();renderFinds();refreshStats();
+  renderChoices();renderEquipment();renderFinds();renderRelationships();refreshStats();
 }
 function startRun(){
   if(state.phase!=="town"||!planning)return;
   var plan=planning;planning=null;state.runs++;
   state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic};
+  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",hunt:plan.hunt,found:null,development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0};
+  $("battleHeroineEvent").hidden=true;
   var gear=item(plan.hunt);
   $("expeditionLead").textContent=gear?"調査中："+gear.name+"（敵を"+requiredKills(plan.hunt)+"体倒すと発見）":plan.development||"今回は装備の調査なし";
   $("battleMsg").textContent=battle.message;spawnEnemy();show("battle");
@@ -384,6 +482,14 @@ function strike(who){
     battle.kills++;battle.nextTimer=.65;
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
     if(battle.kills>state.best){state.best=battle.kills;}
+    if(battle.kills===10&&!daughter().rescued){
+      battle.rescueText=rescueDaughter();
+      battle.rescuePause=2.8;
+      battle.nextTimer=2.8;
+      $("battleHeroineEvent").hidden=false;
+      $("battleHeroineEvent").textContent=battle.rescueText;
+      say("10体目突破！ 村長の娘を救出した！");
+    }
     if(mapGoalReached()&&!state.goal){state.goal=true;say("灰渡の育成目標達成！ でも遠征はまだ続きます。");}
     if(battle.hunt&&!battle.found&&battle.kills>=requiredKills(battle.hunt)){
       battle.found=battle.hunt;
@@ -402,6 +508,7 @@ function update(dt){
   if(state.phase!=="battle")return;
   battle.scroll+=dt*105;
   battle.flash=Math.max(0,battle.flash-dt);
+  battle.rescuePause=Math.max(0,(battle.rescuePause||0)-dt);
   if(battle.nextTimer>0){battle.nextTimer-=dt;if(battle.nextTimer<=0)spawnEnemy();return;}
   var e=battle.enemy;if(!e)return;
   e.hit=Math.max(0,e.hit-dt);
@@ -427,6 +534,8 @@ function endRun(){
     "発見！ "+item(battle.found).name+"を持ち帰りました。町に戻って王子かメイドに装備させよう！":
     battle.hunt?"調査した場所には届きませんでした。次回また噂を選んで挑戦できます。":
     "今回は新しい装備の調査をしていません。メイドの噂から探しに行けます。";
+  $("heroineResult").hidden=!battle.rescueText;
+  $("heroineResult").textContent=battle.rescueText||"";
   $("resultKills").textContent=String(earned);
   $("resultTown").textContent=battle.topic==="road"||battle.topic==="forge"?"+1":battle.event?"発見":"—";
   $("developmentReport").hidden=!battle.development&&!battle.event;
@@ -441,7 +550,7 @@ function endRun(){
 $("backButton").addEventListener("click",function(){
   if(state.phase!=="result")return;
   state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  renderChoices();renderEquipment();renderFinds();show("town");
+  renderChoices();renderEquipment();renderFinds();renderRelationships();show("town");
 });
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function poly(points,color){
@@ -476,6 +585,14 @@ function spriteMaid(x,y,t){
   rect(10,-40,7,17,"#e5ba99");rect(22,-59,4,54,"#9c7847");
   poly([[17,-7],[34,-7],[27,2]],"#dbc57d");
   if(state.maid.hp<=0&&state.phase==="battle")rect(-28,-5,55,6,"#a24d4c");
+  ctx.restore();
+}
+function spriteDaughter(x,y,t){
+  ctx.save();ctx.translate(Math.round(x),Math.round(y+Math.sin(t*4)*2));
+  rect(-15,-45,30,37,"#b78164");rect(-11,-24,22,15,"#e3bd91");
+  rect(-13,-60,26,24,"#edc6a6");rect(-16,-67,31,12,"#684b39");
+  rect(-17,-59,8,35,"#684b39");rect(10,-60,9,34,"#684b39");
+  rect(4,-51,4,4,"#323a3f");rect(-13,-10,9,11,"#725c53");rect(5,-10,9,11,"#725c53");
   ctx.restore();
 }
 function spriteEnemy(e,t){
@@ -526,6 +643,7 @@ function drawScene(t){
   }
   spriteMaid(160,277,t);spritePrince(254,277,t);
   if(active) spriteEnemy(battle.enemy,t);
+  if(active&&battle.rescuePause>0)spriteDaughter(550,277,t);
   if(active&&battle.flash>0){ctx.fillStyle="rgba(255,241,190,.16)";ctx.fillRect(0,0,w,h);}
   rect(0,346,w,14,"#3d5b4f");
 }
@@ -535,7 +653,7 @@ function loop(now){
   update(dt*1.45);drawScene(clock);
   requestAnimationFrame(loop);
 }
-renderChoices();renderEquipment();renderFinds();show("town");requestAnimationFrame(loop);
+meetDaughter();renderChoices();renderEquipment();renderFinds();renderRelationships();show("town");requestAnimationFrame(loop);
 })();
 </script>
 </body>
