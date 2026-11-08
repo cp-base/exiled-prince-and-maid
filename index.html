@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>追放王子とメイドちゃん｜灰渡の遠征</title>
+<style>
+:root{color-scheme:dark;--bg:#141d22;--panel:#202c31;--line:#40535a;--text:#f4eee1;--sub:#b6c3c2;--gold:#f1cb79;--mint:#85d8be}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -25%,#34494b,var(--bg) 70%);color:var(--text);font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}
+button{font:inherit}
+.wrap{max-width:1020px;margin:0 auto;padding:24px 18px 48px}
+header{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.eyebrow{font-size:12px;color:var(--gold);letter-spacing:.12em;font-weight:700}
+h1{font-size:clamp(23px,4vw,34px);line-height:1.4;margin:5px 0 0}
+.version{font-size:12px;color:var(--sub)}
+.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 15px}
+.stat small{display:block;color:var(--sub);font-size:12px}
+.stat strong{display:block;color:var(--text);font-size:24px;margin-top:3px;font-variant-numeric:tabular-nums}
+.goal{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;border:1px solid #6b5d39;border-radius:10px;background:#302f27;padding:11px 14px;margin-bottom:14px;font-size:14px}
+.goal b{color:var(--gold)}
+.goal.done{border-color:#4d9a80;background:#20392f}
+.goal.done b{color:var(--mint)}
+.stage{border:2px solid #586867;background:#6b929c;border-radius:15px;overflow:hidden;position:relative;box-shadow:0 12px 35px #0004}
+canvas{display:block;width:100%;height:auto;aspect-ratio:8/3;image-rendering:pixelated}
+.stage-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:37px;background:#19272b;padding:8px 13px;font-size:13px;color:var(--sub)}
+.stage-footer strong{color:var(--gold)}
+.team{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.character{background:#243338;border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.character-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:8px}
+.character-head small{color:var(--sub);font-size:12px}
+.bar{width:100%;height:9px;background:#122024;border:1px solid #425458;border-radius:10px;overflow:hidden}
+.bar>i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#84c6a1,#b5e5ae);transition:width .15s}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:19px;margin-top:10px}
+[hidden]{display:none!important}
+.motto{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.06em;margin-bottom:7px}
+h2{font-size:21px;margin:0 0 10px}
+.dialog{display:flex;align-items:flex-start;gap:12px;padding:12px 15px;border:1px solid #5c6b62;border-radius:10px;background:#293833}
+.portrait{display:grid;place-items:center;flex:none;width:43px;height:43px;background:#405c60;border:2px solid #7b9c99;border-radius:10px;font-size:26px}
+.dialog p{margin:0;line-height:1.8;font-size:14px}
+.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.choice{background:#33434b;border:1px solid #71848a;border-radius:11px;color:var(--text);text-align:left;padding:15px 12px;cursor:pointer;min-height:99px;transition:background .15s,border .15s,transform .15s}
+.choice:hover,.choice:focus-visible{background:#435961;border-color:var(--gold);transform:translateY(-2px);outline:none}
+.choice b{display:block;font-size:15px;line-height:1.45;margin-bottom:10px}
+.choice span{font-size:13px;color:var(--mint)}
+.note{color:var(--sub);font-size:13px;line-height:1.7;margin:12px 0 0}
+.battle-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.enemy-meter{min-width:min(100%,280px)}
+.enemy-meter .bar>i{background:linear-gradient(90deg,#c96668,#f0a26e)}
+.battle-msg{margin:12px 0 0;padding:11px 13px;background:#17252a;border-radius:9px;color:#e7e6d6;min-height:45px;font-size:14px}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:15px 0}
+.result-box{background:#17262a;border-radius:9px;padding:12px;text-align:center}
+.result-box small{color:var(--sub);display:block;font-size:12px}
+.result-box b{font-size:24px;color:var(--gold)}
+.primary{border:0;border-radius:10px;background:var(--gold);color:#282a24;padding:13px 22px;font-weight:800;cursor:pointer}
+.primary:hover,.primary:focus-visible{background:#ffe0a1;outline:2px solid #fff;outline-offset:2px}
+footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
+@media(max-width:620px){.wrap{padding:15px 10px 30px}.stat{padding:10px}.stat strong{font-size:19px}.stage-footer{font-size:11px}.team{gap:7px}.character{padding:9px}.character-head{display:block}.character-head small{display:block}.choices{grid-template-columns:1fr}.choice{min-height:0;padding:12px}.choice b{margin-bottom:3px}.card{padding:14px}.result-box b{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.choice,.bar>i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.1 / 灰渡の町</div></header>
+<main>
+  <section class="overview" aria-label="遠征の記録">
+    <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
+    <div class="stat"><small>最長到達（撃破数）</small><strong id="best">0 体</strong></div>
+    <div class="stat"><small>町の発展</small><strong id="townScore">0</strong></div>
+  </section>
+  <div id="goal" class="goal"><span><b>灰渡の目標</b>：1回の遠征で敵を10体倒す</span><strong id="goalLabel">挑戦中</strong></div>
+  <section class="stage" aria-label="横スクロールの遠征画面">
+    <canvas id="scene" width="960" height="360" role="img" aria-label="王子とメイドが右へ進み、敵と自動で戦う"></canvas>
+    <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><strong id="encounterLabel">出撃前</strong></div>
+  </section>
+  <section class="team" aria-label="二人の状態">
+    <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div></div>
+    <div class="character"><div class="character-head"><b>🧹 メイド</b><small id="maidText">HP 24/24　攻撃 3</small></div><div class="bar"><i id="maidBar"></i></div></div>
+  </section>
+  <section id="townPanel" class="card">
+    <div class="motto">町で準備する</div>
+    <h2>メイドからの提案</h2>
+    <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p>「王子さま！　次の遠征の前に、ひとつだけ準備しましょう！　私にいい考えがあります！」</p></div>
+    <div class="choices" id="choices"></div>
+    <p class="note">ひとつ選ぶと、そのまま二人で出撃します。戦闘中のコマンド操作はありません。</p>
+  </section>
+  <section id="battlePanel" class="card" hidden aria-live="off">
+    <div class="battle-header"><div><div class="motto">自動遠征中</div><h2 id="battleTitle">街道を進んでいます…</h2></div><div class="enemy-meter"><div class="character-head"><b id="enemyName">敵</b><small id="enemyHp">HP --</small></div><div class="bar"><i id="enemyBar"></i></div></div></div>
+    <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
+    <p class="note">敵を倒すたびに次の敵が強くなります。二人が倒れたら自動帰還します。</p>
+  </section>
+  <section id="resultPanel" class="card" hidden>
+    <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
+    <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="resultSpeech"></p></div>
+    <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>町の発展 +</small><b id="resultTown">0</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
+    <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
+  </section>
+</main>
+<footer>これは遊びの骨格を確かめる仮実装です。町の発展は遠征成果で増えるだけで、住民や経済のターン計算はありません。再読み込みで最初からになります。</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id);};
+var canvas=$("scene"),ctx=canvas.getContext("2d");
+var state={phase:"town",runs:0,best:0,town:0,goal:false,prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
+var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:""};
+var frameAt=0,clock=0;
+var proposals=[
+  {title:"王子さま、剣の稽古です！",effect:"王子の攻撃 +2",apply:function(){state.prince.atk+=2;}},
+  {title:"私も戦えるようになります！",effect:"メイドの攻撃 +2",apply:function(){state.maid.atk+=2;}},
+  {title:"お弁当を増やしましょう！",effect:"二人の最大HP +6",apply:function(){state.prince.max+=6;state.maid.max+=6;}}
+];
+function refreshStats(){
+  $("runs").textContent=String(state.runs);
+  $("best").textContent=state.best+" 体";
+  $("townScore").textContent=String(state.town);
+  $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+state.prince.atk;
+  $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+state.maid.atk;
+  $("princeBar").style.width=100*state.prince.hp/state.prince.max+"%";
+  $("maidBar").style.width=100*state.maid.hp/state.maid.max+"%";
+  $("goal").classList.toggle("done",state.goal);
+  $("goalLabel").textContent=state.goal?"達成！":"挑戦中";
+}
+function show(phase){
+  state.phase=phase;
+  $("townPanel").hidden=phase!=="town";
+  $("battlePanel").hidden=phase!=="battle";
+  $("resultPanel").hidden=phase!=="result";
+  $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"王子とメイドの自動遠征中":"町へ帰還しました";
+  $("encounterLabel").textContent=phase==="town"?"出撃前":phase==="result"?"今回 "+battle.kills+" 体撃破":"第"+(battle.kills+1)+"戦";
+  refreshStats();
+}
+function renderChoices(){
+  var box=$("choices");box.textContent="";
+  proposals.forEach(function(p){
+    var btn=document.createElement("button");btn.type="button";btn.className="choice";
+    var title=document.createElement("b"),eff=document.createElement("span");
+    title.textContent=p.title;eff.textContent=p.effect;
+    btn.appendChild(title);btn.appendChild(eff);
+    btn.addEventListener("click",function(){startRun(p);});
+    box.appendChild(btn);
+  });
+}
+function startRun(p){
+  if(state.phase!=="town")return;
+  p.apply();state.runs++;
+  state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
+  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+p.title+"」を実行して、いざ出撃！"};
+  $("battleMsg").textContent=battle.message;
+  spawnEnemy();show("battle");
+}
+function spawnEnemy(){
+  var n=battle.kills+1,kind=n%10===0?"boss":n%3===0?"wolf":n%3===2?"goblin":"slime";
+  var names={slime:"草原スライム",goblin:"街道ゴブリン",wolf:"森の魔狼",boss:"古い道の番人"};
+  var max=Math.round(9+n*4.2+(kind==="boss"?16:0));
+  battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:1+Math.floor(n*.8)+(kind==="boss"?3:0),x:960,timer:1.3,hit:0};
+  battle.princeTimer=.4;battle.maidTimer=.8;
+  $("battleTitle").textContent="第"+n+"戦";
+  $("enemyName").textContent=battle.enemy.name;
+  $("enemyHp").textContent="HP "+max+"/"+max;
+  $("enemyBar").style.width="100%";
+  $("encounterLabel").textContent="第"+n+"戦";
+}
+function say(message){battle.message=message;$("battleMsg").textContent=message;}
+function strike(who){
+  var enemy=battle.enemy;if(!enemy||enemy.hp<=0)return;
+  var dmg=who.atk;enemy.hp=Math.max(0,enemy.hp-dmg);enemy.hit=.2;battle.flash=.12;
+  $("enemyHp").textContent="HP "+enemy.hp+"/"+enemy.max;
+  $("enemyBar").style.width=100*enemy.hp/enemy.max+"%";
+  if(enemy.hp<=0){
+    battle.kills++;battle.nextTimer=.65;
+    say(enemy.name+"を撃破！　"+battle.kills+"体目！");
+    if(battle.kills>=10&&!state.goal){state.goal=true;say("灰渡の目標達成！ でも遠征はまだ続きます。");}
+    if(battle.kills>state.best){state.best=battle.kills;}
+    if(battle.kills%4===0&&Math.random()<.45){
+      state.prince.hp=Math.min(state.prince.max,state.prince.hp+5);
+      state.maid.hp=Math.min(state.maid.max,state.maid.hp+5);
+      say("道ばたで薬草を発見！　二人のHPが5回復。");
+    }
+    refreshStats();
+  }
+}
+function update(dt){
+  if(state.phase!=="battle")return;
+  battle.scroll+=dt*105;
+  battle.flash=Math.max(0,battle.flash-dt);
+  if(battle.nextTimer>0){battle.nextTimer-=dt;if(battle.nextTimer<=0)spawnEnemy();return;}
+  var e=battle.enemy;if(!e)return;
+  e.hit=Math.max(0,e.hit-dt);
+  if(e.x>356){e.x=Math.max(356,e.x-dt*470);return;}
+  battle.princeTimer-=dt;battle.maidTimer-=dt;e.timer-=dt;
+  if(state.prince.hp>0&&battle.princeTimer<=0){battle.princeTimer+=.88;strike(state.prince);}
+  if(e.hp<=0)return;
+  if(state.maid.hp>0&&battle.maidTimer<=0){battle.maidTimer+=1.12;strike(state.maid);}
+  if(e.hp<=0)return;
+  if(e.timer<=0){
+    e.timer+=1.55;
+    var target=state.prince.hp>0?state.prince:state.maid;
+    target.hp=Math.max(0,target.hp-e.atk);
+    say(e.name+"の攻撃！ "+e.atk+" ダメージ。");
+    refreshStats();
+    if(state.prince.hp<=0&&state.maid.hp<=0)endRun();
+  }
+}
+function endRun(){
+  var earned=battle.kills;
+  state.town+=earned;
+  $("resultKills").textContent=String(earned);
+  $("resultTown").textContent=String(earned);
+  $("resultBest").textContent=String(state.best);
+  $("resultTitle").textContent=state.goal?"灰渡の目標達成！":"二人は町に帰還した";
+  $("resultSpeech").textContent=state.goal?
+    "「王子さま、目標を達成しました！ もっと奥へ行けるか、また試しましょう！」":
+    "「王子さま、今回は"+earned+"体倒せました！ 町で準備をして、また挑戦しましょう！」";
+  show("result");
+}
+$("backButton").addEventListener("click",function(){
+  if(state.phase!=="result")return;
+  state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
+  renderChoices();show("town");
+});
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
+function poly(points,color){
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);
+  for(var i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);
+  ctx.closePath();ctx.fill();
+}
+function spritePrince(x,y,t){
+  var bob=Math.sin(t*5)*2;
+  ctx.save();ctx.translate(Math.round(x),Math.round(y+bob));
+  rect(-19,-12,33,13,"#203039");rect(-15,-41,23,29,"#526fbd");
+  poly([[-17,-35],[-26,-4],[-8,-4]],"#963f4b");
+  rect(-14,-57,21,18,"#f4c39c");rect(-16,-61,25,7,"#513c30");
+  rect(-14,-68,23,5,"#e7be60");rect(-11,-73,5,6,"#e7be60");rect(1,-73,5,6,"#e7be60");
+  rect(2,-51,3,3,"#25333d");
+  rect(-13,-13,10,13,"#272b44");rect(2,-13,10,13,"#272b44");
+  rect(10,-39,8,8,"#e5c6a0");
+  if(state.phase==="battle"&&battle.enemy&&battle.enemy.x<=356&&battle.enemy.hp>0){
+    rect(16,-68,4,40,"#d6e5e4");rect(12,-28,12,4,"#d3ac61");
+  }else{rect(19,-45,4,36,"#d6e5e4");rect(15,-10,12,4,"#d3ac61");}
+  if(state.prince.hp<=0&&state.phase==="battle")rect(-30,-5,50,6,"#a24d4c");
+  ctx.restore();
+}
+function spriteMaid(x,y,t){
+  var bob=Math.sin(t*5+1.3)*2;
+  ctx.save();ctx.translate(Math.round(x),Math.round(y+bob));
+  poly([[-13,-35],[-22,-10],[15,-10],[9,-35]],"#263440");
+  rect(-10,-44,18,17,"#e8dcd1");rect(-4,-39,7,20,"#f7f1e9");
+  rect(-12,-59,21,19,"#e5ba99");rect(-15,-65,27,14,"#674a3e");
+  rect(-15,-68,27,7,"#f3e8de");rect(1,-52,3,3,"#28363a");
+  rect(-15,-10,10,11,"#34343e");rect(5,-10,10,11,"#34343e");
+  rect(10,-40,7,17,"#e5ba99");rect(22,-59,4,54,"#9c7847");
+  poly([[17,-7],[34,-7],[27,2]],"#dbc57d");
+  if(state.maid.hp<=0&&state.phase==="battle")rect(-28,-5,55,6,"#a24d4c");
+  ctx.restore();
+}
+function spriteEnemy(e,t){
+  if(!e)return;
+  var x=Math.round(e.x),y=270+Math.sin(t*6)*2;
+  ctx.save();ctx.translate(x,y);
+  if(e.kind==="slime"){
+    ctx.fillStyle="#6dbd9b";ctx.beginPath();ctx.ellipse(0,-17,29,25,0,Math.PI,2*Math.PI);ctx.fill();
+    rect(-11,-24,5,7,"#223a3d");rect(8,-24,5,7,"#223a3d");
+  }else if(e.kind==="goblin"){
+    rect(-21,-52,42,45,"#608d6e");rect(-29,-43,9,17,"#608d6e");rect(21,-43,9,17,"#608d6e");
+    rect(-12,-35,6,6,"#262e2f");rect(9,-35,6,6,"#262e2f");rect(-17,-6,34,7,"#4b5142");
+  }else if(e.kind==="wolf"){
+    poly([[-37,-8],[-32,-52],[-12,-35],[12,-60],[36,-39],[38,-9]],"#7a8291");
+    poly([[-29,-45],[-23,-65],[-6,-46]],"#7a8291");
+    rect(12,-41,7,7,"#f0cb8c");rect(-24,-6,11,12,"#5c6272");rect(17,-6,11,12,"#5c6272");
+  }else{
+    rect(-44,-96,88,88,"#7d868a");rect(-32,-115,63,30,"#9ca2a2");
+    rect(-20,-100,13,9,"#e7bd6f");rect(11,-100,13,9,"#e7bd6f");
+    rect(-60,-76,17,53,"#5b666e");rect(43,-76,17,53,"#5b666e");
+    rect(-34,-8,22,14,"#4d5660");rect(13,-8,22,14,"#4d5660");
+  }
+  if(e.hit>0){ctx.globalAlpha=Math.min(.65,e.hit*3);rect(-61,-114,122,125,"#fff4bf");}
+  ctx.restore();
+}
+function drawScene(t){
+  var w=960,h=360,active=state.phase==="battle",scroll=battle.scroll;
+  var sky=ctx.createLinearGradient(0,0,0,260);
+  sky.addColorStop(0,"#688c9d");sky.addColorStop(1,"#d0bb92");ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#e2d4a7";ctx.beginPath();ctx.arc(740,72,31,0,Math.PI*2);ctx.fill();
+  for(var i=0;i<7;i++){
+    var cx=((i*190-scroll*.13)%1220+1220)%1220-110;
+    rect(cx,51+(i%3)*23,95,15,"#b7c5bb");rect(cx+22,39+(i%3)*23,54,18,"#b7c5bb");
+  }
+  poly([[0,230],[90,154],[220,219],[339,170],[480,230],[620,162],[780,221],[916,159],[960,188],[960,299],[0,299]],"#617f78");
+  poly([[0,248],[135,211],[245,237],[402,203],[541,239],[709,204],[844,240],[960,207],[960,305],[0,305]],"#3f655c");
+  for(var j=0;j<12;j++){
+    var x=((j*128-scroll*.47)%1150+1150)%1150-60;
+    var tall=38+(j%3)*16;
+    rect(x,275-tall,9,tall,"#465c48");
+    poly([[x-18,255-tall*.5],[x+5,202-tall*.3],[x+28,255-tall*.5]],"#31594b");
+  }
+  rect(0,278,w,82,"#a18f70");rect(0,278,w,7,"#dac7a0");
+  for(var k=0;k<18;k++){var px=((k*84-scroll)%1130+1130)%1130-50;rect(px,311+(k%2)*23,42,5,"#817b63");}
+  if(!active){
+    rect(665,212,108,66,"#a28a65");poly([[647,212],[720,156],[790,212]],"#4a5d60");
+    rect(709,240,25,38,"#604d42");rect(681,231,16,15,"#d9bd86");
+  }
+  spriteMaid(160,277,t);spritePrince(254,277,t);
+  if(active) spriteEnemy(battle.enemy,t);
+  if(active&&battle.flash>0){ctx.fillStyle="rgba(255,241,190,.16)";ctx.fillRect(0,0,w,h);}
+  rect(0,346,w,14,"#3d5b4f");
+}
+function loop(now){
+  if(!frameAt)frameAt=now;
+  var dt=Math.min(.045,(now-frameAt)/1000);frameAt=now;clock+=dt;
+  update(dt*1.45);drawScene(clock);
+  requestAnimationFrame(loop);
+}
+renderChoices();show("town");requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
