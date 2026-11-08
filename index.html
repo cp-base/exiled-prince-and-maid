@@ -269,7 +269,11 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",currentTown:"haiwatari",runs:0,best:0,town:{road:0,forge:0},goal:false,gold:0,materials:0,merchant:{visiting:false,visits:0,purchases:0},rumors:[],items:[],finds:[],people:[],party:["prince","maid"],relationships:{daughter:{met:false,rescued:false,affinity:0,visits:0,firstExchange:false,joined:false,flags:[],history:[],scene:""}},equipment:{prince:null,maid:null,apprentice:null,daughter:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22},daughter:{atk:3,max:20,hp:20}};
+var state={phase:"town",currentTown:"haiwatari",runs:0,best:0,town:{road:0,forge:0},goal:false,gold:0,materials:0,merchant:{visiting:false,visits:0,purchases:0},rumors:[],items:[],finds:[],people:[],party:["prince","maid"],relationships:{
+  daughter:{met:false,rescued:false,affinity:0,visits:0,firstExchange:false,joined:false,flags:[],history:[],scene:""},
+  mayor:{affinity:0,flags:[],history:[],scene:""},
+  toma:{affinity:0,flags:[],history:[],scene:"森を見回る狩人。遠征の帰りに会えるかもしれない。"}
+},equipment:{prince:null,maid:null,apprentice:null,daughter:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24},apprentice:{atk:2,max:22,hp:22},daughter:{atk:3,max:20,hp:20}};
 var planning=null;
 var battle={kills:0,enemy:null,timers:{},positions:{},drops:[],gold:0,materials:0,shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"",development:null,rescueText:null,rescuePause:0,rescueWaiting:false};
 var frameAt=0,clock=0,speedMultiplier=1;
@@ -335,10 +339,14 @@ function mapGoalReached(){
 function advanceTown(which){
   if(which==="road" && state.town.road<mapGoal.road){
     state.town.road++;
+    if(state.town.road>=2)recordVillageRelation("mayor","road",1,
+      "村長『古い街道まで整えたのか。少しずつ、この町を任せてもよいと思えてきたよ』");
     return "街道を整備！ 街道 Lv"+state.town.road+"。届く噂の範囲が広がりました。";
   }
   if(which==="forge" && state.town.forge<mapGoal.forge){
     state.town.forge++;
+    recordVillageRelation("mayor","tools",1,
+      "村長『道具が揃ってきたな。みんなの暮らしにも、少し希望が戻ったようだ』");
     return "工房を復興！ 工房 Lv"+state.town.forge+"。装備品の攻撃補正が高まりました。";
   }
   return null;
@@ -385,6 +393,57 @@ function rollTownFind(topic){
   var data=townFindData[found];
   if(data.kind==="person"){state.people.push(found);if(state.party.indexOf(found)<0)state.party.push(found);}else state.finds.push(found);
   return "発見！ "+data.name+"（"+data.effect+"）";
+}
+// 重要人物は村長・狩人トーマ・村長の娘の3人だけ。友好度とフラグでイベントを制御する。
+function villageRelation(who){return state.relationships[who];}
+function recordVillageRelation(who,id,points,text){
+  var person=villageRelation(who),flag=id;
+  if(person.flags.indexOf(flag)>=0)return null;
+  person.flags.push(flag);
+  person.affinity=Math.max(0,Math.min(5,person.affinity+points));
+  person.scene=text;person.history.push({id:id,text:text});
+  return text;
+}
+function meetMayor(){
+  recordVillageRelation("mayor","meeting",1,
+    "村長『追放された王子さまか……。小さな村だが、しばらくここで暮らすといい』");
+}
+function processVillageReturn(){
+  var news=(battle.villageEvents||[]).slice(),hunter=villageRelation("toma");
+  if(battle.kills>=3&&hunter.flags.indexOf("meeting")<0){
+    var intro=recordVillageRelation("toma","meeting",1,
+      "遠征から帰ると、弓を背負った狩人トーマがいた。『その傷、街道の魔物か。……あんた、意外とやるんだな』");
+    if(intro)news.push("🏹 "+intro);
+  }else if(battle.kills>=5&&hunter.flags.indexOf("meeting")>=0&&hunter.flags.indexOf("tracks")<0){
+    var trail=recordVillageRelation("toma","tracks",1,
+      "狩人トーマ『森で大きな狼の足跡を見つけた。村に来る前に、あいつを止めたい。手を貸してくれないか？』");
+    if(trail)news.push("🏹 "+trail);
+  }
+  return news;
+}
+function renderVillagePerson(who){
+  var d=villageRelation(who),prefix=who==="mayor"?"mayor":"toma";
+  $(prefix+"Value").textContent=d.affinity+" / 5";
+  $(prefix+"Hearts").textContent="♥ ".repeat(d.affinity)+"♡ ".repeat(5-d.affinity);
+  $(prefix+"Scene").textContent=d.scene;
+  var history=$(prefix+"History");history.textContent="";
+  d.history.slice(-2).reverse().forEach(function(entry){
+    var li=document.createElement("li");li.textContent=entry.text;history.appendChild(li);
+  });
+}
+function renderVillageRelationships(){
+  renderVillagePerson("mayor");renderVillagePerson("toma");
+  var m=villageRelation("mayor"),t=villageRelation("toma");
+  $("mayorStatus").textContent=m.affinity>=4?"信頼している":m.affinity>=2?"認め始めた":"様子見";
+  $("tomaStatus").textContent=t.flags.indexOf("hunt_done")>=0?"討伐の戦友":
+    t.flags.indexOf("tracks")>=0?"討伐依頼中":t.flags.indexOf("meeting")>=0?"顔見知り":"まだ会っていない";
+  $("tomaHuntStatus").textContent=t.flags.indexOf("hunt_done")>=0?
+    "討伐完了：森の大狼を倒し、村の安全を守った。":
+    t.flags.indexOf("tracks")>=0?
+      "討伐依頼：メイドの提案からトーマの依頼を選び、遠征8体目の森の大狼を倒そう。":
+      t.flags.indexOf("meeting")>=0?
+        "討伐：さらに遠征で実績を作るとトーマが手がかりを教えてくれる。":
+        "討伐：トーマとはまだ会っていない。";
 }
 // 親密度の値とイベント内容は仮置き。住人の自律行動は行わない。
 function daughter(){return state.relationships.daughter;}
@@ -441,9 +500,13 @@ function rescueDaughter(){
   var text="【街道で救出】10体目の古い道の番人を倒した先で、魔物に追われる村長の娘を発見！ 王子とメイドが助け出した。"+(close?
     "『……王子さまなら来てくださると思っていました』":
     "『助けてくださって、本当にありがとうございます！』");
+  var news=recordVillageRelation("mayor","daughter_rescued",1,
+    "村長『娘を助けてくれたのか……ありがとう。心から礼を言わせてくれ』");
+  if(news&&battle.villageEvents)battle.villageEvents.push("👴 "+news);
   return relationshipEvent("rescue",2,text+"　娘は灰渡にいる間、遠征に協力してくれることになった。",true);
 }
 function renderRelationships(){
+  renderVillageRelationships();
   var d=daughter(),status=d.rescued&&d.affinity>=4?"特別な存在":d.affinity>=3?"親しい":d.affinity>=2?"少し打ち解けた":"顔見知り";
   $("relationStatus").textContent=status;
   $("relationValue").textContent=d.affinity+" / 5";
@@ -474,6 +537,12 @@ function getProposals(){
     title:"町の人に話を聞いてみましょう！",effect:"技術品・人材を探す（結果はランダム）",topic:"search",
     apply:function(){return {development:"町で聞き込みを行いました。"};}
   });
+  if(villageRelation("toma").flags.indexOf("tracks")>=0 &&
+     villageRelation("toma").flags.indexOf("hunt_done")<0)proposals.push({
+    huntPriority:true,title:"狩人トーマと森の魔物を討伐しましょう！",
+    effect:"村の討伐依頼 / 遠征8体目に森の大狼が出現",
+    apply:function(){return {tomaHunt:true,development:"狩人トーマの案内で、森の大狼の討伐に向かいます。"};}
+  });
   if(daughter().met&&!daughter().firstExchange)proposals.push({
     heroineFirst:true,title:"村長の娘さんと初めてお話ししましょう！",
     effect:"最初の交流 / 遠征10体目の救出イベント解放",
@@ -485,8 +554,9 @@ function getProposals(){
 // 毎回、条件に合う提案を最大3件抽選。最初の交流だけは必ず候補にする。
 function rollProposals(){
   var pool=getProposals(),chosen=[];
-  var first=pool.find(function(p){return p.heroineFirst;});
-  if(first){chosen.push(first);pool=pool.filter(function(p){return p!==first;});}
+  var priorities=pool.filter(function(p){return p.heroineFirst||p.huntPriority;});
+  chosen=priorities.slice(0,3);
+  pool=pool.filter(function(p){return priorities.indexOf(p)<0;});
   for(var i=pool.length-1;i>0;i--){
     var j=Math.floor(Math.random()*(i+1)),tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;
   }
@@ -679,7 +749,7 @@ function renderChoices(){
 function selectProposal(p){
   if(state.phase!=="town"||planning)return;
   var outcome=p.apply()||{},event=p.topic?rollTownFind(p.topic):null,relationship=outcome.relationship||null;
-  planning={title:p.title,rumor:outcome.rumor||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship};
+  planning={title:p.title,rumor:outcome.rumor||null,development:outcome.development||null,event:event,topic:p.topic||null,relationship:relationship,tomaHunt:!!outcome.tomaHunt};
   var summary="【"+p.title+"】\n"+(planning.development||planning.rumor||"今回は内政を行いません。");
   if(p.topic)summary+="\n"+(event||"今回は特別な発見はありませんでした。");
   if(relationship)summary+="\n【村長の娘】"+relationship;
@@ -691,20 +761,21 @@ function startRun(){
   var plan=planning;planning=null;state.runs++;
   state.merchant.visiting=false;
   state.party.forEach(function(id){state[id].hp=state[id].max;});
-  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205,daughter:132},drops:[],gold:0,materials:0,shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,rescueText:null,rescuePause:0,rescueWaiting:false};
+  battle={kills:0,enemy:null,timers:{},positions:{prince:254,maid:160,apprentice:205,daughter:132},drops:[],gold:0,materials:0,shots:[],enemyAttacks:0,nextTimer:0,scroll:0,flash:0,message:"「"+plan.title+"」を選んで出撃！",development:plan.development,event:plan.event,topic:plan.topic,relationship:plan.relationship,tomaHunt:!!plan.tomaHunt,tomaVictoryText:null,villageEvents:[],rescueText:null,rescuePause:0,rescueWaiting:false};
   state.party.forEach(function(id){battle.timers[id]=id==="prince"?.4:id==="maid"?.8:.6;});
   $("battleHeroineEvent").hidden=true;
+  $("tomaBattleEvent").hidden=true;
   $("rescueModal").hidden=true;
   $("dropTicker").hidden=true;$("dropTicker").textContent="";
-  $("expeditionLead").textContent="敵から所持金・共通素材・低確率の装備を集めよう。";
+  $("expeditionLead").textContent=plan.tomaHunt?"狩人トーマの討伐依頼：遠征8体目の森の大狼を倒そう！":"敵から所持金・共通素材・低確率の装備を集めよう。";
   $("battleMsg").textContent=battle.message;spawnEnemy();show("battle");
 }
 $("departButton").addEventListener("click",startRun);
 function spawnEnemy(){
-  var n=battle.kills+1,kind=n%10===0?"boss":n%3===0?"wolf":n%3===2?"goblin":"slime";
-  var names={slime:"草原スライム",goblin:"街道ゴブリン",wolf:"森の魔狼",boss:"古い道の番人"};
-  var max=Math.round(9+n*4.2+(kind==="boss"?16:0));
-  battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:1+Math.floor(n*.8)+(kind==="boss"?3:0),x:960,timer:1.3,hit:0};
+  var n=battle.kills+1,kind=battle.tomaHunt&&n===8?"huntBoss":n%10===0?"boss":n%3===0?"wolf":n%3===2?"goblin":"slime";
+  var names={slime:"草原スライム",goblin:"街道ゴブリン",wolf:"森の魔狼",boss:"古い道の番人",huntBoss:"森の大狼"};
+  var max=Math.round(9+n*4.2+(kind==="boss"?16:kind==="huntBoss"?12:0));
+  battle.enemy={n:n,kind:kind,name:names[kind],hp:max,max:max,atk:1+Math.floor(n*.8)+(kind==="boss"||kind==="huntBoss"?3:0),x:960,timer:1.3,hit:0};
   state.party.forEach(function(id){battle.timers[id]=attackInterval(id)*.5;});
   $("battleTitle").textContent="第"+n+"戦";
   $("enemyName").textContent=battle.enemy.name;
@@ -724,6 +795,18 @@ function strike(id){
     battle.kills++;battle.nextTimer=.65;
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
     if(battle.kills>state.best)state.best=battle.kills;
+    if(enemy.kind==="huntBoss"&&battle.tomaHunt){
+      var done=recordVillageRelation("toma","hunt_done",2,
+        "狩人トーマ『大狼を倒したのか！ これで村も安心だ。あんたは俺の戦友だな』");
+      var mayor=recordVillageRelation("mayor","wolf_hunt",1,
+        "村長『森の脅威まで退けてくれたのか。君たちを頼ってよかった』");
+      battle.tomaVictoryText="🏹 森の大狼の討伐成功！ トーマの友好度と村長の信頼が上昇。";
+      if(done)battle.villageEvents.push("🏹 "+done);
+      if(mayor)battle.villageEvents.push("👴 "+mayor);
+      $("tomaBattleEvent").textContent=battle.tomaVictoryText;
+      $("tomaBattleEvent").hidden=false;
+      say("討伐成功！ 森の大狼を倒した！");
+    }
     var loot=collectBattleRewards(enemy);
     if(loot)say(enemy.name+"が「"+item(loot).name+"」をドロップ！");
     if(battle.kills===10&&daughter().firstExchange&&!daughter().rescued){
@@ -790,6 +873,7 @@ $("rescueContinue").addEventListener("click",function(){
 });
 function endRun(){
   var earned=battle.kills;
+  var villageNews=processVillageReturn();
   if(daughter().joined&&state.currentTown==="haiwatari"&&state.party.indexOf("daughter")<0&&state.party.length<3){
     state.party.push("daughter");
   }
@@ -802,6 +886,9 @@ function endRun(){
   $("heroineResult").textContent=battle.rescueText||"";
   $("postBattleHeroine").hidden=!postBattleText;
   $("postBattleHeroine").textContent=postBattleText?"💗 村長の娘との交流： "+postBattleText:"";
+  $("villageEventsResult").hidden=!villageNews.length;
+  $("villageEventsResult").textContent=villageNews.join("\n");
+  $("villageEventsResult").style.whiteSpace="pre-line";
   $("resultKills").textContent=String(earned);
   $("resultTown").textContent=battle.topic==="road"||battle.topic==="forge"?"+1":battle.event?"発見":"—";
   $("developmentReport").hidden=!battle.development&&!battle.event;
@@ -948,7 +1035,7 @@ function loop(now){
   drawScene(clock);
   requestAnimationFrame(loop);
 }
-meetDaughter();renderChoices();renderEquipment();renderFinds();renderParty();renderMerchant();renderRelationships();show("town");requestAnimationFrame(loop);
+meetMayor();meetDaughter();renderChoices();renderEquipment();renderFinds();renderParty();renderMerchant();renderRelationships();show("town");requestAnimationFrame(loop);
 })();
 </script>
 </body>
