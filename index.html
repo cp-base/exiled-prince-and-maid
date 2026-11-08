@@ -44,6 +44,17 @@ h2{font-size:21px;margin:0 0 10px}
 .choice:hover,.choice:focus-visible{background:#435961;border-color:var(--gold);transform:translateY(-2px);outline:none}
 .choice b{display:block;font-size:15px;line-height:1.45;margin-bottom:10px}
 .choice span{font-size:13px;color:var(--mint)}
+.gear-caption{margin-top:7px;color:var(--gold);font-size:12px;line-height:1.5}
+.inventory{display:grid;gap:9px;margin-top:10px}
+.item-row{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;background:#17272b;padding:11px 12px;border:1px solid #43595e;border-radius:9px}
+.item-row .item-name{font-size:14px;font-weight:700}
+.item-row small{display:block;color:var(--sub);line-height:1.6;margin-top:3px}
+.item-actions{display:flex;gap:6px;flex-wrap:wrap}
+.item-button{border:1px solid #708a8c;border-radius:7px;background:#344b52;color:var(--text);padding:8px 10px;cursor:pointer;font-size:12px}
+.item-button.active{background:#5c5540;border-color:var(--gold);color:#ffe2a1}
+.item-button:hover{border-color:var(--gold)}
+.loot-report{margin-top:13px;padding:12px 14px;border:1px solid #73805f;background:#30382e;border-radius:9px;line-height:1.65;font-size:14px}
+.lead{margin-top:12px;font-size:13px;color:var(--gold)}
 .note{color:var(--sub);font-size:13px;line-height:1.7;margin:12px 0 0}
 .battle-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .enemy-meter{min-width:min(100%,280px)}
@@ -62,7 +73,7 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
 </head>
 <body>
 <div class="wrap">
-<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.1 / 灰渡の町</div></header>
+<header><div><div class="eyebrow">HAIWATARI / FIRST EXPEDITION</div><h1>追放王子とメイドちゃん</h1></div><div class="version">遊べるHTML試作 v0.2 / 灰渡の町</div></header>
 <main>
   <section class="overview" aria-label="遠征の記録">
     <div class="stat"><small>遠征回数</small><strong id="runs">0</strong></div>
@@ -75,49 +86,113 @@ footer{color:#99a9a7;font-size:12px;line-height:1.8;margin-top:19px}
     <div class="stage-footer"><span id="stageLabel">灰渡の町で準備中</span><strong id="encounterLabel">出撃前</strong></div>
   </section>
   <section class="team" aria-label="二人の状態">
-    <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div></div>
-    <div class="character"><div class="character-head"><b>🧹 メイド</b><small id="maidText">HP 24/24　攻撃 3</small></div><div class="bar"><i id="maidBar"></i></div></div>
+    <div class="character"><div class="character-head"><b>👑 王子</b><small id="princeText">HP 30/30　攻撃 4</small></div><div class="bar"><i id="princeBar"></i></div><div id="princeGear" class="gear-caption">装備：なし</div></div>
+    <div class="character"><div class="character-head"><b>🧹 メイド</b><small id="maidText">HP 24/24　攻撃 3</small></div><div class="bar"><i id="maidBar"></i></div><div id="maidGear" class="gear-caption">装備：なし</div></div>
   </section>
   <section id="townPanel" class="card">
     <div class="motto">町で準備する</div>
     <h2>メイドからの提案</h2>
-    <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p>「王子さま！　次の遠征の前に、ひとつだけ準備しましょう！　私にいい考えがあります！」</p></div>
+    <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="maidSpeech">「王子さま！　次の遠征の前に、ひとつだけ準備しましょう！」</p></div>
     <div class="choices" id="choices"></div>
     <p class="note">ひとつ選ぶと、そのまま二人で出撃します。戦闘中のコマンド操作はありません。</p>
   </section>
+  <section id="equipmentPanel" class="card">
+    <div class="motto">帰還後に整える</div>
+    <h2>見つけた装備</h2>
+    <div id="inventory" class="inventory"></div>
+    <p class="note">装備はそれぞれ1つまで。同じ品を二人が同時に使うことはできません。町にいる間だけ変更できます。</p>
+  </section>
   <section id="battlePanel" class="card" hidden aria-live="off">
     <div class="battle-header"><div><div class="motto">自動遠征中</div><h2 id="battleTitle">街道を進んでいます…</h2></div><div class="enemy-meter"><div class="character-head"><b id="enemyName">敵</b><small id="enemyHp">HP --</small></div><div class="bar"><i id="enemyBar"></i></div></div></div>
+    <div id="expeditionLead" class="lead"></div>
     <div class="battle-msg" id="battleMsg" aria-live="polite">王子とメイドが出発！</div>
     <p class="note">敵を倒すたびに次の敵が強くなります。二人が倒れたら自動帰還します。</p>
   </section>
   <section id="resultPanel" class="card" hidden>
     <div class="motto">遠征終了</div><h2 id="resultTitle">おかえりなさい！</h2>
     <div class="dialog"><span class="portrait" aria-hidden="true">🧹</span><p id="resultSpeech"></p></div>
+    <div id="lootReport" class="loot-report"></div>
     <div class="result-grid"><div class="result-box"><small>今回の撃破数</small><b id="resultKills">0</b></div><div class="result-box"><small>町の発展 +</small><b id="resultTown">0</b></div><div class="result-box"><small>最長記録</small><b id="resultBest">0</b></div></div>
     <button class="primary" id="backButton" type="button">町に戻って、次の提案を聞く</button>
   </section>
 </main>
-<footer>これは遊びの骨格を確かめる仮実装です。町の発展は遠征成果で増えるだけで、住民や経済のターン計算はありません。再読み込みで最初からになります。</footer>
+<footer>メイドの噂・遠征での発見・帰還後の装備を試す仮実装です。町の発展値は以前の仮表示のままです。住民の毎ターン計算はありません。再読み込みで最初からになります。</footer>
 </div>
 <script>
 (function(){
 "use strict";
 var $=function(id){return document.getElementById(id);};
 var canvas=$("scene"),ctx=canvas.getContext("2d");
-var state={phase:"town",runs:0,best:0,town:0,goal:false,prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
-var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:""};
+var state={phase:"town",runs:0,best:0,town:0,goal:false,items:[],equipment:{prince:null,maid:null},prince:{atk:4,max:30,hp:30},maid:{atk:3,max:24,hp:24}};
+var battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"",hunt:null,found:null};
 var frameAt=0,clock=0;
-var proposals=[
-  {title:"王子さま、剣の稽古です！",effect:"王子の攻撃 +2",apply:function(){state.prince.atk+=2;}},
-  {title:"私も戦えるようになります！",effect:"メイドの攻撃 +2",apply:function(){state.maid.atk+=2;}},
-  {title:"お弁当を増やしましょう！",effect:"二人の最大HP +6",apply:function(){state.prince.max+=6;state.maid.max+=6;}}
-];
+// ここから下の発見条件・装備数値は試作用の仮データ。
+var itemData={
+  old_sword:{name:"古い騎士の剣",bonus:3,at:2,detail:"街道で見つかった古びた剣"},
+  forest_staff:{name:"森の木霊杖",bonus:4,at:4,detail:"森の奥で見つかる不思議な杖"},
+  bandit_dagger:{name:"銀の短剣",bonus:6,at:6,detail:"古い道に残された武具"}
+};
+function item(id){return id?itemData[id]:null;}
+function totalAttack(actor){var gear=item(state.equipment[actor]);return state[actor].atk+(gear?gear.bonus:0);}
+function nextRumor(){
+  if(state.items.indexOf("old_sword")<0)return {id:"old_sword",title:"街道に古い剣があるそうです！",effect:"敵を2体倒せば剣を発見",speech:"「王子さま、街道の草むらに剣が落ちているという噂です！　探してみませんか？」"};
+  if(state.items.indexOf("forest_staff")<0&&state.best>=2)return {id:"forest_staff",title:"森の奥で光を見たそうです！",effect:"敵を4体倒せば杖を発見",speech:"「森で光る枝を見た人がいるんですって。少し奥まで行ってみませんか？」"};
+  if(state.items.indexOf("bandit_dagger")<0&&state.best>=5)return {id:"bandit_dagger",title:"古い道に武具庫の跡が！",effect:"敵を6体倒せば短剣を発見",speech:"「古い道に隠れた武具庫があるみたいです。遠征で確かめましょう！」"};
+  return null;
+}
+function getProposals(){
+  var rumor=nextRumor(),proposals=[];
+  if(rumor)proposals.push({title:rumor.title,effect:rumor.effect,apply:function(){return rumor.id;}});
+  proposals.push({
+    title:state.runs%2===0?"王子さま、剣の稽古です！":"私も戦えるようになります！",
+    effect:state.runs%2===0?"王子の基礎攻撃 +2":"メイドの基礎攻撃 +2",
+    apply:function(){if(state.runs%2===0)state.prince.atk+=2;else state.maid.atk+=2;return null;}
+  });
+  proposals.push({title:"お弁当を増やしましょう！",effect:"二人の最大HP +6",apply:function(){state.prince.max+=6;state.maid.max+=6;return null;}});
+  if(!rumor)proposals.push({title:"二人で剣を振ってみましょう！",effect:"王子とメイドの基礎攻撃 +1",apply:function(){state.prince.atk++;state.maid.atk++;return null;}});
+  return proposals;
+}
+function renderEquipment(){
+  var box=$("inventory");box.textContent="";
+  if(state.items.length===0){
+    var empty=document.createElement("p");empty.className="note";
+    empty.textContent="まだ装備はありません。メイドの噂を選んで遠征してみよう。";
+    box.appendChild(empty);return;
+  }
+  state.items.forEach(function(id){
+    var gear=item(id),row=document.createElement("div");row.className="item-row";
+    var label=document.createElement("div");label.className="item-name";
+    label.textContent=gear.name+"（攻撃 +"+gear.bonus+"）";
+    var info=document.createElement("small");info.textContent=gear.detail;label.appendChild(info);
+    var actions=document.createElement("div");actions.className="item-actions";
+    ["prince","maid"].forEach(function(who){
+      var equipped=state.equipment[who]===id;
+      var button=document.createElement("button");button.type="button";
+      button.className="item-button"+(equipped?" active":"");
+      button.textContent=(who==="prince"?"王子":"メイド")+(equipped?"：外す":"に装備");
+      button.addEventListener("click",function(){
+        if(state.phase!=="town")return;
+        if(state.equipment[who]===id){state.equipment[who]=null;}
+        else{
+          var other=who==="prince"?"maid":"prince";
+          if(state.equipment[other]===id)state.equipment[other]=null;
+          state.equipment[who]=id;
+        }
+        refreshStats();renderEquipment();
+      });
+      actions.appendChild(button);
+    });
+    row.appendChild(label);row.appendChild(actions);box.appendChild(row);
+  });
+}
 function refreshStats(){
   $("runs").textContent=String(state.runs);
   $("best").textContent=state.best+" 体";
   $("townScore").textContent=String(state.town);
-  $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+state.prince.atk;
-  $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+state.maid.atk;
+  $("princeText").textContent="HP "+Math.ceil(state.prince.hp)+"/"+state.prince.max+"　攻撃 "+totalAttack("prince");
+  $("maidText").textContent="HP "+Math.ceil(state.maid.hp)+"/"+state.maid.max+"　攻撃 "+totalAttack("maid");
+  $("princeGear").textContent="装備："+(item(state.equipment.prince)?item(state.equipment.prince).name:"なし");
+  $("maidGear").textContent="装備："+(item(state.equipment.maid)?item(state.equipment.maid).name:"なし");
   $("princeBar").style.width=100*state.prince.hp/state.prince.max+"%";
   $("maidBar").style.width=100*state.maid.hp/state.maid.max+"%";
   $("goal").classList.toggle("done",state.goal);
@@ -126,6 +201,7 @@ function refreshStats(){
 function show(phase){
   state.phase=phase;
   $("townPanel").hidden=phase!=="town";
+  $("equipmentPanel").hidden=phase!=="town";
   $("battlePanel").hidden=phase!=="battle";
   $("resultPanel").hidden=phase!=="result";
   $("stageLabel").textContent=phase==="town"?"灰渡の町で準備中":phase==="battle"?"王子とメイドの自動遠征中":"町へ帰還しました";
@@ -134,7 +210,9 @@ function show(phase){
 }
 function renderChoices(){
   var box=$("choices");box.textContent="";
-  proposals.forEach(function(p){
+  var rumor=nextRumor();
+  $("maidSpeech").textContent=rumor?rumor.speech:"「王子さま！　次は何を鍛えて遠征しましょうか？」";
+  getProposals().forEach(function(p){
     var btn=document.createElement("button");btn.type="button";btn.className="choice";
     var title=document.createElement("b"),eff=document.createElement("span");
     title.textContent=p.title;eff.textContent=p.effect;
@@ -145,9 +223,11 @@ function renderChoices(){
 }
 function startRun(p){
   if(state.phase!=="town")return;
-  p.apply();state.runs++;
+  var huntId=p.apply();state.runs++;
   state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+p.title+"」を実行して、いざ出撃！"};
+  battle={kills:0,enemy:null,princeTimer:0,maidTimer:0,nextTimer:0,scroll:0,flash:0,message:"「"+p.title+"」を実行して、いざ出撃！",hunt:huntId,found:null};
+  var gear=item(huntId);
+  $("expeditionLead").textContent=gear?"調査中："+gear.name+"（敵を"+gear.at+"体倒すと発見）":"今回は装備の調査なし";
   $("battleMsg").textContent=battle.message;
   spawnEnemy();show("battle");
 }
@@ -166,7 +246,7 @@ function spawnEnemy(){
 function say(message){battle.message=message;$("battleMsg").textContent=message;}
 function strike(who){
   var enemy=battle.enemy;if(!enemy||enemy.hp<=0)return;
-  var dmg=who.atk;enemy.hp=Math.max(0,enemy.hp-dmg);enemy.hit=.2;battle.flash=.12;
+  var dmg=totalAttack(who===state.prince?"prince":"maid");enemy.hp=Math.max(0,enemy.hp-dmg);enemy.hit=.2;battle.flash=.12;
   $("enemyHp").textContent="HP "+enemy.hp+"/"+enemy.max;
   $("enemyBar").style.width=100*enemy.hp/enemy.max+"%";
   if(enemy.hp<=0){
@@ -174,6 +254,11 @@ function strike(who){
     say(enemy.name+"を撃破！　"+battle.kills+"体目！");
     if(battle.kills>=10&&!state.goal){state.goal=true;say("灰渡の目標達成！ でも遠征はまだ続きます。");}
     if(battle.kills>state.best){state.best=battle.kills;}
+    if(battle.hunt&&!battle.found&&battle.kills>=item(battle.hunt).at){
+      battle.found=battle.hunt;
+      say("発見！　"+item(battle.found).name+"を持ち帰れそうです！");
+      $("expeditionLead").textContent="発見済み："+item(battle.found).name+"（帰還後に装備）";
+    }
     if(battle.kills%4===0&&Math.random()<.45){
       state.prince.hp=Math.min(state.prince.max,state.prince.hp+5);
       state.maid.hp=Math.min(state.maid.max,state.maid.hp+5);
@@ -207,6 +292,11 @@ function update(dt){
 function endRun(){
   var earned=battle.kills;
   state.town+=earned;
+  if(battle.found&&state.items.indexOf(battle.found)<0)state.items.push(battle.found);
+  $("lootReport").textContent=battle.found?
+    "発見！ "+item(battle.found).name+"を持ち帰りました。町に戻って王子かメイドに装備させよう！":
+    battle.hunt?"調査した場所には届きませんでした。次回また噂を選んで挑戦できます。":
+    "今回は新しい装備の調査をしていません。メイドの噂から探しに行けます。";
   $("resultKills").textContent=String(earned);
   $("resultTown").textContent=String(earned);
   $("resultBest").textContent=String(state.best);
@@ -219,7 +309,7 @@ function endRun(){
 $("backButton").addEventListener("click",function(){
   if(state.phase!=="result")return;
   state.prince.hp=state.prince.max;state.maid.hp=state.maid.max;
-  renderChoices();show("town");
+  renderChoices();renderEquipment();show("town");
 });
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function poly(points,color){
@@ -313,7 +403,7 @@ function loop(now){
   update(dt*1.45);drawScene(clock);
   requestAnimationFrame(loop);
 }
-renderChoices();show("town");requestAnimationFrame(loop);
+renderChoices();renderEquipment();show("town");requestAnimationFrame(loop);
 })();
 </script>
 </body>
